@@ -13,7 +13,7 @@
 			<div class="flex items-center justify-between gap-2">
 				<h3 class="card-title text-lg">{tool.name}</h3>
 				{#if tool.icon}
-					<svelte:component this={tool.icon} class="size-6 opacity-70" aria-hidden="true" />
+					<tool.icon class="size-6 opacity-70" aria-hidden="true" />
 				{/if}
 			</div>
 			<p class="text-sm opacity-80">{tool.description}</p>

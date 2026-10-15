@@ -1,14 +1,13 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import { theme } from '$lib/theme/theme.svelte';
 
 	let { children }: { children: Snippet } = $props();
 
 	// Initialize theme once in the browser (reads localStorage + system pref).
 	$effect(() => {
-		if (typeof document !== 'undefined') {
-			import('$lib/theme/theme.svelte').then(({ theme }) => theme.init());
-		}
+		theme.init();
 	});
 </script>
 

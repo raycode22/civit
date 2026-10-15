@@ -2,12 +2,6 @@
 	import { Sun, Moon, Monitor } from '@lucide/svelte';
 	import { theme, type ThemeName } from '$lib/theme/theme.svelte';
 
-	const icons: Record<ThemeName, typeof Sun> = {
-		light: Sun,
-		dark: Moon,
-		system: Monitor
-	};
-
 	const labels: Record<ThemeName, string> = {
 		light: 'Light theme',
 		dark: 'Dark theme',
@@ -26,6 +20,12 @@
 	aria-label="Switch theme (current: {$theme})"
 	id="theme-toggle"
 >
-	<svelte:component this={icons[$theme]} class="size-4" aria-hidden="true" />
+	{#if $theme === "light"}
+	<Sun class="size-4" aria-hidden="true" />
+{:else if $theme === "dark"}
+	<Moon class="size-4" aria-hidden="true" />
+{:else}
+	<Monitor class="size-4" aria-hidden="true" />
+{/if}
 	<span class="hidden sm:inline">{labels[$theme]}</span>
 </button>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createEffect, onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { Copy, Check, WifiOff } from '@lucide/svelte';
 	import FileDropZone from '$lib/components/FileDropZone.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
@@ -76,8 +76,8 @@
 		window.removeEventListener('offline', setOffline);
 	});
 
-	createEffect(() => {
-		// Reset transient state when leaving the tool.
+	$effect(() => {
+		// Reset transient copy-feedback state when there is no result.
 		if (!result) copied = false;
 	});
 </script>
