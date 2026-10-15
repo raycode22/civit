@@ -1,13 +1,25 @@
 import { test, expect, type Page } from '@playwright/test';
-import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
+
+/** Minimal local typings for the Node globals used below (avoids @types/node). */
+declare const process: { cwd(): string };
+type NodeFs = {
+  writeFileSync: (p: string, d: Uint8Array) => void;
+  mkdirSync: (p: string, o: { recursive: true }) => void;
+  rmSync: (p: string, o: { recursive: true; force: true }) => void;
+};
+type NodePath = { join: (...parts: string[]) => string };
+
+// Node-only modules are loaded via dynamic import with a locally typed surface
+// so this file type-checks without adding @types/node to the app's deps.
+const { writeFileSync, mkdirSync, rmSync } = (await import('node:fs')) as unknown as NodeFs;
+const { join } = (await import('node:path')) as unknown as NodePath;
 
 /**
  * Playwright serializes inline `buffer` payloads as base64 and decodes them in
  * the browser via atob, which fails for binary data. Upload fixtures are
  * therefore written to temp files on disk and referenced by path instead.
  */
-const fixtureDir = join(import.meta.dirname, '.fixtures');
+const fixtureDir = join(process.cwd(), 'tests', 'e2e', '.fixtures');
 mkdirSync(fixtureDir, { recursive: true });
 
 const PNG_BYTES = Uint8Array.from(
