@@ -15,7 +15,7 @@
 	<a href="/" class="link link-hover">← All tools</a>
 </nav>
 
-<svelte:component this={tool.component} />
+<tool.component />
 
 {#if !tool.offlineCapable}
 	<div class="alert alert-info mt-8 text-sm max-w-3xl mx-auto" role="status">
