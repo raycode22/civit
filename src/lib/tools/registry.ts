@@ -8,13 +8,13 @@ import Base64ImageEncoder from '$tools/base64-image-encoder/Tool.svelte';
  * it up automatically.
  */
 export const tools: Tool[] = [
-	{
-		...base64Meta,
-		component: Base64ImageEncoder
-	}
+  {
+    ...base64Meta,
+    component: Base64ImageEncoder
+  }
 ];
 
 /** Look up a tool by its route id. */
 export function getTool(id: string): Tool | undefined {
-	return tools.find((tool) => tool.id === id);
+  return tools.find((tool) => tool.id === id);
 }

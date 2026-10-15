@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { Tool } from '$lib/tools/types';
-	import StatusBadge from '$lib/components/StatusBadge.svelte';
 
 	let { data }: { data: { tool: Tool } } = $props();
-	const tool = data.tool;
+	// Derived so it stays reactive if load() re-runs (e.g. param change).
+	const tool = $derived(data.tool);
 </script>
 
 <svelte:head>

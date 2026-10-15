@@ -76,17 +76,25 @@ describe('buildDataUri', () => {
   });
 });
 
+/** Decode a base64 string (no prefix) back to bytes, without Node globals. */
+function decodeBase64(b64: string): Uint8Array {
+  const binary = atob(b64);
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+  return out;
+}
+
 describe('encodeBytes', () => {
   it('encodes a Uint8Array to the expected data URI', () => {
     const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]); // PNG signature prefix
     const r = encodeBytes('image/png', bytes);
-    expect(r.dataUri).toBe('data:image/png;base64,iVBORw0KGgo='.slice(0, 'data:image/png;base64,'.length) + Buffer.from(bytes).toString('base64'));
+    expect(r.dataUri).toBe('data:image/png;base64,iVBORw==');
   });
 
-  it('round-trips through Buffer decoding', () => {
+  it('round-trips through base64 decoding', () => {
     const bytes = new Uint8Array([1, 2, 3, 4, 5, 250, 251, 252, 253, 254, 255]);
     const r = encodeBytes('image/jpeg', bytes);
-    const decoded = Buffer.from(r.dataUri.split(',')[1], 'base64');
+    const decoded = decodeBase64(r.dataUri.split(',')[1]);
     expect(Array.from(decoded)).toEqual(Array.from(bytes));
   });
 
@@ -99,9 +107,9 @@ describe('encodeBytes', () => {
   it('handles input larger than one encoding chunk', () => {
     const big = new Uint8Array(0x8000 * 2 + 7).fill(0xab);
     const r = encodeBytes('image/png', big);
-    const decoded = Buffer.from(r.dataUri.split(',')[1], 'base64');
+    const decoded = decodeBase64(r.dataUri.split(',')[1]);
     expect(decoded.length).toBe(big.length);
-    expect(decoded.every((v) => v === 0xab)).toBe(true);
+    expect(decoded.every((v: number) => v === 0xab)).toBe(true);
   });
 });
 
