@@ -14,7 +14,7 @@
  *    fully successful install).
  */
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const PRECACHE = `civit-precache-${VERSION}`;
 const RUNTIME = `civit-runtime-${VERSION}`;
 
@@ -30,13 +30,13 @@ const PRECACHE_URLS = [
 ];
 
 /** Best-effort cache write; failures must never break the fetch pipeline. */
-function putInCache(cacheName, request, response) {
-  caches
-    .open(cacheName)
-    .then((cache) => cache.put(request, response))
-    .catch(() => {
-      /* storage full / opaque response — non-fatal */
-    });
+async function putInCache(cacheName, request, response) {
+  try {
+    const cache = await caches.open(cacheName);
+    await cache.put(request, response);
+  } catch {
+    /* storage full / header-only response — non-fatal */
+  }
 }
 
 self.addEventListener('install', (event) => {
@@ -85,7 +85,13 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
+          // Cache the SPA fallback shell under BOTH '/index.html' and this
+          // exact navigation URL. The static host serves every unknown route
+          // from index.html, so caching per-URL lets an offline reload of a
+          // deep link (e.g. /tools/<id>) succeed via `caches.match(request)`
+          // even when the worker controlling the reload is freshly installed.
           putInCache(RUNTIME, '/index.html', response.clone());
+          putInCache(RUNTIME, request, response.clone());
           return response;
         })
         .catch(async () => {
