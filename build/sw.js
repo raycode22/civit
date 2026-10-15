@@ -30,13 +30,13 @@ const PRECACHE_URLS = [
 ];
 
 /** Best-effort cache write; failures must never break the fetch pipeline. */
-function putInCache(cacheName, request, response) {
-  caches
-    .open(cacheName)
-    .then((cache) => cache.put(request, response))
-    .catch(() => {
-      /* storage full / opaque response — non-fatal */
-    });
+async function putInCache(cacheName, request, response) {
+  try {
+    const cache = await caches.open(cacheName);
+    await cache.put(request, response);
+  } catch {
+    /* storage full / header-only response — non-fatal */
+  }
 }
 
 self.addEventListener('install', (event) => {
