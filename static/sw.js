@@ -26,9 +26,18 @@ const PRECACHE_URLS = [
   '/favicon.svg',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  '/icons/icon-maskable-512.png',
-  '/tools/base64-image-encoder.html'
+  '/icons/icon-maskable-512.png'
 ];
+
+/** Best-effort cache write; failures must never break the fetch pipeline. */
+function putInCache(cacheName, request, response) {
+  caches
+    .open(cacheName)
+    .then((cache) => cache.put(request, response))
+    .catch(() => {
+      /* storage full / opaque response — non-fatal */
+    });
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -51,7 +60,9 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((k) => k !== PRECACHE && k !== RUNTIME).map((k) => caches.delete(k)))
+        Promise.all(
+          keys.filter((k) => k !== PRECACHE && k !== RUNTIME).map((k) => caches.delete(k))
+        )
       )
       .then(self.clients.claim)
   );
@@ -74,8 +85,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(RUNTIME).then((cache) => cache.put('/index.html', copy));
+          putInCache(RUNTIME, '/index.html', response.clone());
           return response;
         })
         .catch(async () => {
@@ -102,8 +112,7 @@ self.addEventListener('fetch', (event) => {
         (cached) =>
           cached ||
           fetch(request).then((response) => {
-            const copy = response.clone();
-            caches.open(RUNTIME).then((cache) => cache.put(request, copy));
+            putInCache(RUNTIME, request, response.clone());
             return response;
           })
       )
@@ -117,8 +126,7 @@ self.addEventListener('fetch', (event) => {
       const network = fetch(request)
         .then((response) => {
           if (response && response.status === 200) {
-            const copy = response.clone();
-            caches.open(RUNTIME).then((cache) => cache.put(request, copy));
+            putInCache(RUNTIME, request, response.clone());
           }
           return response;
         })

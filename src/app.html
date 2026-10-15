@@ -1,26 +1,29 @@
 <!doctype html>
 <html lang="en" data-theme="civit">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" href="%sveltekit.assets%/favicon.svg" />
-		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)" />
-		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-		<meta name="description" content="Civit — offline-first browser-based converters and developer utilities." />
-		<script src="%sveltekit.assets%/theme-init.js"></script>
-		%sveltekit.head%
-	</head>
-	<body data-sveltekit-preload-data="hover">
-		<div style="display: contents">%sveltekit.body%</div>
-		<script>
-			if ('serviceWorker' in navigator) {
-				window.addEventListener('load', () => {
-					navigator.serviceWorker
-						.register('%sveltekit.assets%/sw.js')
-						.catch((err) => console.error('Service worker registration failed:', err));
-				});
-			}
-		</script>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%sveltekit.assets%/favicon.svg" />
+    <link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta
+      name="description"
+      content="Civit — offline-first browser-based converters and developer utilities."
+    />
+    <script src="%sveltekit.assets%/theme-init.js"></script>
+    %sveltekit.head%
+  </head>
+  <body data-sveltekit-preload-data="hover">
+    <div style="display: contents">%sveltekit.body%</div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('%sveltekit.assets%/sw.js')
+            .catch((err) => console.error('Service worker registration failed:', err));
+        });
+      }
+    </script>
+  </body>
 </html>

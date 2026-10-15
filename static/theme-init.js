@@ -7,7 +7,7 @@
     var resolved =
       stored === 'light' || stored === 'dark' ? stored : prefersDark ? 'dark' : 'light';
     document.documentElement.dataset.theme = resolved;
-  } catch (e) {
+  } catch {
     /* localStorage unavailable (private mode etc.) — keep default theme */
   }
 })();
