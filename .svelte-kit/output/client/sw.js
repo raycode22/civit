@@ -30,13 +30,13 @@ const PRECACHE_URLS = [
 ];
 
 /** Best-effort cache write; failures must never break the fetch pipeline. */
-function putInCache(cacheName, request, response) {
-  caches
-    .open(cacheName)
-    .then((cache) => cache.put(request, response))
-    .catch(() => {
-      /* storage full / opaque response — non-fatal */
-    });
+async function putInCache(cacheName, request, response) {
+  try {
+    const cache = await caches.open(cacheName);
+    await cache.put(request, response);
+  } catch {
+    /* storage full / header-only response — non-fatal */
+  }
 }
 
 self.addEventListener('install', (event) => {
@@ -90,8 +90,8 @@ self.addEventListener('fetch', (event) => {
           // from index.html, so caching per-URL lets an offline reload of a
           // deep link (e.g. /tools/<id>) succeed via `caches.match(request)`
           // even when the worker controlling the reload is freshly installed.
-          putInCache(RUNTIME, '/index.html', response.clone());
-          putInCache(RUNTIME, request, response.clone());
+          void putInCache(RUNTIME, '/index.html', response.clone());
+          void putInCache(RUNTIME, request, response.clone());
           return response;
         })
         .catch(async () => {
@@ -118,7 +118,7 @@ self.addEventListener('fetch', (event) => {
         (cached) =>
           cached ||
           fetch(request).then((response) => {
-            putInCache(RUNTIME, request, response.clone());
+            void putInCache(RUNTIME, request, response.clone());
             return response;
           })
       )
@@ -132,7 +132,7 @@ self.addEventListener('fetch', (event) => {
       const network = fetch(request)
         .then((response) => {
           if (response && response.status === 200) {
-            putInCache(RUNTIME, request, response.clone());
+            void putInCache(RUNTIME, request, response.clone());
           }
           return response;
         })

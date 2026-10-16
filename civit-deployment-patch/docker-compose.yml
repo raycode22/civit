@@ -1,0 +1,9 @@
+services:
+  civit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: civit:local
+    ports:
+      - '8080:80'
+    restart: unless-stopped

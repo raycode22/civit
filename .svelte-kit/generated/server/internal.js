@@ -26,7 +26,7 @@ export const options = {
 		app: ({ head, body, assets, nonce, env }) => "<!doctype html>\n<html lang=\"en\" data-theme=\"civit\">\n  <head>\n    <meta charset=\"utf-8\" />\n    <link rel=\"icon\" href=\"" + assets + "/favicon.svg\" />\n    <link rel=\"manifest\" href=\"" + assets + "/manifest.webmanifest\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <meta name=\"theme-color\" content=\"#1a1a2e\" media=\"(prefers-color-scheme: dark)\" />\n    <meta name=\"theme-color\" content=\"#ffffff\" media=\"(prefers-color-scheme: light)\" />\n    <meta\n      name=\"description\"\n      content=\"Civit — offline-first browser-based converters and developer utilities.\"\n    />\n    <script src=\"" + assets + "/theme-init.js\"></script>\n    " + head + "\n  </head>\n  <body data-sveltekit-preload-data=\"hover\">\n    <div style=\"display: contents\">" + body + "</div>\n    <script>\n      if ('serviceWorker' in navigator) {\n        window.addEventListener('load', () => {\n          navigator.serviceWorker\n            .register('" + assets + "/sw.js')\n            .catch((err) => console.error('Service worker registration failed:', err));\n        });\n      }\n    </script>\n  </body>\n</html>\n",
 		error
 	},
-	version_hash: "pwuq1p"
+	version_hash: "ocp93q"
 };
 
 export async function get_hooks() {

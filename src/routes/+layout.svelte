@@ -1,4 +1,5 @@
 <script lang="ts">
+	import '../app.css';
 	import type { Snippet } from 'svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { theme } from '$lib/theme/theme.svelte';
