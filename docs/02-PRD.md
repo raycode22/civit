@@ -9,7 +9,7 @@
 Civit is a web application scaffold for a collection of
 browser-accessible tools. The supplied implementation outline includes a
 shared application shell, search, theme controls, reusable tool cards
-and status badges, a file drop zone, and a `base64-image-encoder` tool.
+and status badges, a file drop zone, and a all-purpose tool.
 The application is intended to produce a static build suitable for
 deployment to Cloudflare Pages.
 
