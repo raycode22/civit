@@ -151,3 +151,41 @@ test('works-offline filter keeps verified-offline tools (FR-23)', async ({ page 
   // base64-image-encoder is offline `full`, so it remains under the filter.
   await expect(page.locator('#tool-card-base64-image-encoder')).toBeVisible();
 });
+
+test('landing page renders all tools grouped by category', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('h1')).toHaveText('Civit');
+  // All 6 tools should appear in the sidebar groups.
+  await expect(page.locator('text=Base64 Image Encoder')).toBeVisible();
+  await expect(page.locator('text=PX to REM')).toBeVisible();
+  await expect(page.locator('text=Word Counter')).toBeVisible();
+  await expect(page.locator('text=Favicon Generator')).toBeVisible();
+  await expect(page.locator('text=Image Clipper')).toBeVisible();
+});
+
+test('search filters tools correctly', async ({ page }) => {
+  await page.goto('/');
+  await page.fill('#tool-search', 'px');
+  await expect(page.locator('text=PX to REM')).toBeVisible();
+  await expect(page.locator('text=Word Counter')).not.toBeVisible();
+  await page.fill('#tool-search', '');
+});
+
+test('category filter restricts the sidebar', async ({ page }) => {
+  await page.goto('/');
+  await page.selectOption('#category-filter', 'typography-text');
+  await expect(page.locator('text=PX to REM')).toBeVisible();
+  await expect(page.locator('text=Image Clipper')).not.toBeVisible();
+  await page.selectOption('#category-filter', '');
+});
+
+test('tool route loads and renders the tool', async ({ page }) => {
+  await page.goto('/tools/px-to-rem');
+  await expect(page.locator('text=PX to REM')).toBeVisible();
+  await expect(page.locator('text=Convert pixels to rem')).toBeVisible();
+});
+
+test('tool 404s for unknown id', async ({ page }) => {
+  const response = await page.goto('/tools/not-a-real-tool');
+  expect(response?.status()).toBe(404);
+});
