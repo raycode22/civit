@@ -1,22 +1,20 @@
-# Civit --- Project Constitution
+# Civit --- Multi-Tool Web App: Project Constitution
 
 **Document type:** System rules / engineering constitution\
-**Status:** Draft derived from the supplied Vite+ scaffold\
+**Status:** Revised for two delivery targets: online Cloudflare Pages + R2, and a separate self-contained Docker/offline build.\
 **Scope:** Toolchain, architecture boundaries, development workflow, and
 verification rules
 
 ## 1. Purpose
 
-Civit is a statically deployable web application built with SvelteKit.
-The supplied scaffold establishes a tool-discovery/application shell and
-a `base64-image-encoder` tool, with room to add further tools. This
-constitution defines the constraints that future implementation work
-must preserve.
+Civit is a multi-purpose collection of browser-based tools for Images & Assets, Audio & Video, and Typography & Text. Tool processing is client-side: user files and outputs remain on the user's device. The product has two distinct delivery targets built from the same application source:
 
-[NEW] Product scope for this increment: 44 tools across three
-categories --- Images & Assets, Audio & Video, and Typography & Text ---
-catalogued in the PRD. Product inspiration: delphi.tools, used only as
-a functional reference; do not copy its code, branding, or copy text.
+1. **Online web version:** a statically generated SvelteKit application deployed to Cloudflare Pages. Large public runtime assets may be delivered by the already-selected Cloudflare R2 bucket, and approved third-party CDNs may be used where they provide a measured advantage.
+2. **Docker/offline version:** a separate build profile that includes every approved runtime dependency and asset required by released tools. Once the image is built or transferred to a machine, app runtime must not depend on the internet.
+
+The online deployment is the immediate release target. The Docker/offline target has its own asset-localisation register, build output validation, packaging, and network-disabled acceptance tests. A requirement belonging to one target must not silently be applied to the other.
+
+The app shell and the Base64 image encoder are the architectural reference slice. The product scope plans for 44 tools across the three categories catalogued in the PRD. Product inspiration such as delphi.tools is a functional reference only; do not copy its code, branding, or copy text.
 
 ## 2. Non-negotiable architecture rules
 
@@ -45,35 +43,34 @@ a functional reference; do not copy its code, branding, or copy text.
     installed CLI/config schema before relying on optional or
     version-sensitive behavior.
 
-## 3. Offline/PWA policy
+## 3. Delivery profiles and offline policy
 
-- Implement PWA behavior as a required feature, including a web app manifest, service worker, installability metadata, and an explicit caching strategy appropriate to the selected SvelteKit/Vite+ integration.
-- Cache the application shell, required static assets, tool catalog/metadata, and the code needed for each tool advertised as offline-capable.
-- Do not claim a tool works offline until its actual execution path has been verified with the browser network disabled.
-- Avoid runtime dependencies on remote CDNs, remote fonts, external APIs, or dynamically fetched libraries for offline-supported workflows.
-- Define cache versioning, update behavior, stale asset handling, and recovery from incomplete/failed cache installation.
-- Provide an offline indicator or similarly clear UI state where users need to know whether they are offline.
-- Document the distinction between a locally running Docker deployment and an installed browser PWA. Both must be tested if both are supported.
-- Docker must serve all runtime assets from the local application/container. Persistent data must use an explicit volume only where persistence is required; do not store irreplaceable user data solely in an ephemeral container layer.
--   [NEW] PWA integration decision: before adopting any PWA
-    integration, verify and record whether SvelteKit's native
-    service-worker support (a `src/service-worker` module plus the
-    `$service-worker` module) or a Vite+-compatible PWA plugin is the
-    correct mechanism under the installed SvelteKit/Vite+ versions. Do
-    not assume a plugin name. The scaffold already ships a hand-written
-    `static/sw.js`; record whether it is kept, replaced, or superseded.
--   [NEW] Self-host every WASM binary and ML model file used by a tool.
-    No runtime fetch from a CDN or any third-party origin.
--   [NEW] Do not precache heavy assets for every tool up front. Provide
-    a per-tool "make available offline" action that shows the download
-    size before fetching and reports success or failure.
--   [NEW] Handle storage-quota limits explicitly: check available
-    quota before large downloads and surface a clear, recoverable error
-    when quota is exceeded.
--   [NEW] Track each tool's offline support in the registry as `full`,
-    `partial`, or `online-only`. No tool may be labelled `full` or
-    `partial` in the UI until its network-disabled verification has
-    passed.
+### 3.1 Online profile (primary deployment target)
+
+- Build a static site with SvelteKit `@sveltejs/adapter-static` and publish `build/` to Cloudflare Pages.
+- Use Cloudflare R2 as the large-asset origin. Keep ordinary application assets and npm dependencies bundled by Vite unless a runtime CDN provides a clear performance or maintenance benefit.
+- The online profile may request public libraries/assets from the Pages origin, the configured R2 custom domain, and explicitly approved third-party CDN origins. These origins must be versioned/pinned where possible, have verified licences, and be recorded in the online asset inventory.
+- The online website is allowed to depend on an internet connection. It must not claim that every tool works offline merely because it is served as a static site or is installable as a PWA.
+- Tool implementations still process user content locally. The permission to load runtime assets online does not permit uploads, remote processing, analytics, or telemetry.
+- Optimise initial loads through route/tool lazy-loading, cacheable content-hashed assets, compression, and deferring heavy assets until their tool is opened.
+
+### 3.2 Docker/offline profile
+
+- Docker is a separate build and release target. The image is built while package registries and approved asset sources are reachable, then runs without external network access.
+- Every released Docker tool must work with required assets packaged into the image. No required runtime request may go to a CDN, R2, npm, an API, remote fonts, or another external origin.
+- Docker-specific localisation is tracked in `04-OFFLINE-FIRST-DECISIONS.md`. For any approved bundled asset, record source, version, licence, size, checksum, and update procedure. Obtain explicit approval before bundling heavyweight features (approximately 50 MB or more, including FFmpeg cores and ML model weights).
+- The Docker release is tested with the container's external network unavailable, and the image export/import path is tested for air-gapped machines.
+
+### 3.3 PWA and browser cache
+
+PWA installation and service-worker caching may improve repeat visits, but they are not a substitute for the Docker/offline guarantee. Browser offline behavior for the online site is a best-effort enhancement unless a specific set of routes and tools has a separate, passing offline test. If it is not implemented or verified, do not show a full-offline claim. Keep caching versioned, recoverable, and quota-aware if persistent browser caching is supported.
+
+### 3.4 Shared rules
+
+- Preserve lazy-loading for individual tool code and heavy libraries.
+- Keep tool routes prerendered so direct URLs can be served by static hosting and local Nginx.
+- Show connection state calmly; do not imply that an un-cached remote asset is available offline.
+- Document the distinction between online CDN/R2 delivery and Docker-local assets. Do not introduce separate source trees when a build-time target setting and explicit asset resolver can safely support both profiles.
 
 ## 4. Toolchain policy
 
@@ -132,45 +129,50 @@ explicitly leaves it with SvelteKit.
     a project-pinned `vite-plus` dependency and `npx vp` in CI when that
     is the chosen reproducible setup.
 -   Install Playwright browser binaries separately when needed.
+-   Build policy is target-specific. The online Pages build installs
+    dependencies from the lockfile and may use its approved online asset
+    origins at runtime. The Docker builder installs dependencies and
+    acquires approved assets at build time, then copies only production
+    output and required runtime assets into the final image.
+-   Do not commit `node_modules` or vendor build tooling into Git.
+    Air-gapped Docker users receive the completed image with
+    `docker save` / `docker load`, including its base-image layers.
+-   The Docker/offline build must use local paths for fonts, CSS,
+    JavaScript libraries, WASM, and model weights. The online profile is
+    allowed to use configured R2/CDN origins.
 
 ## 7. Quality gates
 
-Before considering a change complete:
+Before considering a shared code change complete:
 
-1.  Run dependency installation using the repository's selected
-    workflow.
-2.  Ensure SvelteKit sync has run and `.svelte-kit/tsconfig.json` exists
-    before type checking if required.
-3.  Run `vp check` and address reported issues.
-4.  Run `vp test run`.
-5.  Run `vp build`.
-6.  Verify the expected static files and routes exist in `build/`.
-7.  Run Playwright smoke tests where browser dependencies are available.
-8.  Record any failed or skipped checks explicitly; do not describe an
-    unexecuted check as passed.
-9.  [NEW] For any tool whose `offline` registry value changes, run the
-    tool's execution path with the browser network disabled and record
-    the result.
-10. [NEW] When a multi-threaded WASM component is present, verify that
-    `static/_headers` and the container web server both serve the
-    required COOP/COEP headers.
-11. [NEW] Verify by network inspection that a normal tool workflow
-    makes no request to a non-origin host and uploads nothing (privacy
-    rule in §13).
-12. [NEW] Update the credits/licenses list whenever a WASM build, ML
-    model, font, or library is added or upgraded.
+1. Install from the committed lockfile with the repository's selected workflow.
+2. Run `vp check`, `vp test run`, and `vp build`; run `svelte-check` explicitly if Vite+ does not cover Svelte diagnostics.
+3. Verify the expected static routes/assets and run Playwright smoke tests where browser dependencies are available.
+4. Record failed, skipped, and blocked checks honestly.
+5. Inspect network behavior for both profiles. Online tests must show only Pages, the configured R2 domain, and explicitly approved CDN origins; neither profile may upload user content or emit telemetry.
+6. Run Docker/offline tests for every tool labelled `offline: full`. The required asset set must be present in the image, and runtime must work with external networking disabled.
+7. If multi-threaded WASM is used, verify COOP/COEP and MIME/CORS headers on every deployment path that serves the relevant resources.
+8. Update credits/licences when a dependency or asset is added or upgraded. The Docker localisation register applies to assets that must be included in the offline image.
+9. Use a target-aware asset audit: enforce an allowlist on online output and fail the Docker build if a required runtime asset points to an external URL.
+10. Do not claim browser-PWA offline readiness unless that browser-cache path has its own recorded, passing tests.
 
 ## 8. Required build-output invariants
 
 After a successful static build, verify at minimum:
 
 -   `build/index.html`
--   `build/tools/base64-image-encoder.html`
+-   `build/tools/<tool-id>.html` for every registered tool (for example
+    `build/tools/base64-image-encoder.html`)
 -   `build/_headers`
 -   `build/theme-init.js`
 
-These are explicit checks from the supplied scaffold, not an exhaustive
-list of all generated output.
+Tool routes are prerendered (decision recorded in
+`04-OFFLINE-FIRST-DECISIONS.md`), so each registered tool must have its
+own HTML file. Tool ids are enumerated at build time through SvelteKit's
+`entries`. This supports direct-route reloads on Pages and on the local
+Docker server; Docker offline verification additionally confirms that the
+required assets are present in the image. These are minimum checks, not
+an exhaustive list of all generated output.
 
 ## 9. Version-sensitive caveats
 
@@ -199,11 +201,11 @@ be confirmed to exist before use.
 -   Do not claim Vite+ migration is complete until install, checks,
     tests, build, preview, and output verification have been run or
     their omissions documented.
--   [REVISED] PWA/offline behavior is now a required feature (see §3).
-    Do not add or replace a PWA integration until the
-    SvelteKit-native vs. Vite+-compatible-plugin decision in §3 has
-    been verified and recorded. Additional tools remain separately
-    approved increments.
+-   [REVISED] Do not make optional browser-PWA offline caching a release
+    gate for the online website. If a PWA integration is added or changed,
+    verify SvelteKit-native service-worker support versus a Vite+-compatible
+    plugin under the installed versions and document the decision. Docker
+    offline readiness remains a separate mandatory target.
 -   Preserve the distinction between requirements stated in the source
     and assumptions that still need validation.
 
@@ -227,22 +229,19 @@ accessibility targets, or a complete security model because the source
 does not specify them. Those decisions require separate
 product/engineering input.
 
-[REVISED] §13 now defines the privacy/local-only rule and §17 defines
-licensing; analytics remains out of scope entirely. Accessibility
+[REVISED] §13 now defines the privacy/local-only rule, §17 defines
+licensing, and §19 defines dependency localisation approval; analytics
+remains out of scope entirely. Accessibility
 targets and a full security model are still undefined.
 
-## 13. Privacy and local-only processing [NEW]
+## 13. Privacy and local-only processing
 
--   All tool processing happens in the user's browser on the user's
-    device.
--   No user file, selection, recording, or derived output may be
-    uploaded to a server or sent to a third-party API.
--   No telemetry, analytics, or tracking of any kind.
--   The only permitted network traffic is fetching the application's
-    own self-hosted assets. Any tool that would require a remote
-    processing service is out of scope.
--   Privacy claims must be verifiable: network inspection during a
-    tool workflow must show no non-origin requests.
+- All tool processing happens in the user's browser on the user's device.
+- No user file, selection, recording, or derived output may be uploaded to a server or sent to a third-party API.
+- No telemetry, analytics, or tracking of any kind.
+- The online profile may fetch application code and public assets from the Pages origin, configured R2 custom domain, and explicitly allowlisted CDNs. Such requests must not contain user files or conversion data.
+- The Docker/offline profile may fetch runtime assets only from the container/local origin; after startup, no external runtime request may be required.
+- Privacy claims must be tested with network inspection. Online tests verify the request-origin allowlist and absence of uploads; Docker tests verify no external runtime requests and no uploads.
 
 ## 14. Tool contract [NEW]
 
@@ -262,7 +261,9 @@ Rules:
 -   CPU-heavy work runs in a Web Worker with progress reporting and
     cancellation; `Tool.svelte` stays responsive.
 -   Every tool declares its `requires` capabilities and its `offline`
-    value honestly; capability failures produce clear error messages.
+    value honestly; `offline` describes verified Docker/offline readiness,
+    not the behavior of a fresh online browser session. Capability failures
+    produce clear error messages.
 -   A tool is registered and routable only after its increment is
     separately approved.
 
@@ -275,35 +276,23 @@ Rules:
     `ml-model` | `camera-mic-screen` | `clipboard`), and search
     keywords.
 -   The sidebar is grouped by category; search uses Fuse.js over name,
-    description, and keywords; a category filter and a "works offline"
-    filter are available; status and offline badges are shown.
+    description, and keywords; category and Docker/offline-readiness filters
+    are available. Badge copy must not imply that the online site works offline
+    before assets are locally available.
 -   Only the three catalogued categories are in scope for this
     increment.
 
-## 16. Heavy assets, offline claims, and secure context [NEW]
+## 16. Asset delivery, offline guarantees, and secure context
 
--   Self-host all WASM and model files; no runtime CDN dependency.
--   Each tool that needs heavy assets offers a "make available
-    offline" download with the size shown; do not precache
-    everything.
--   Storage-quota handling is mandatory for those downloads.
--   A tool's offline value is a claim that must be backed by an actual
-    run with the network disabled; unverified tools make no offline
-    claim in the UI.
--   ML tools: record model size, self-host the weights, and treat the
-    tool as offline-capable only after the model is cached; otherwise
-    mark it `online-only` or `beta`.
--   ffmpeg.wasm: use a self-hosted core; decide and record
-    single-thread vs. multi-thread; serve COOP/COEP headers in
-    `static/_headers` and in the Docker/Podman web server when
-    multi-threading is used; document file-size and memory limits;
-    verify the license obligations of the exact build used.
--   Secure context: microphone, screen capture, clipboard, and service
-    workers require HTTPS or localhost. Plain-HTTP access over a LAN
-    IP breaks them; document supported access patterns and surface a
-    clear error otherwise.
--   Browser codec and format support varies; define fallbacks and
-    explicit error states per tool.
+- Use profile-specific asset resolution. Online assets may be bundled into Vite chunks, served from Pages, fetched from the configured R2 custom domain, or loaded from approved/version-pinned CDNs. Docker/offline assets must resolve to files packaged into the image.
+- Keep ordinary npm packages in the lockfile and install them during the build. Prefer bundling dependencies needed for app startup. Use runtime CDN loading only when there is a clear performance, cache-sharing, or bundle-size benefit, and test failure behavior.
+- For large assets, use R2 on the online profile to avoid Cloudflare Pages' 25 MiB per-file limit. Use immutable cache headers for versioned/content-hashed assets and shorter cache lifetimes for mutable entry points.
+- Heavy Docker assets (FFmpeg core, ML models, assets around 50 MB or larger) require explicit approval before acquisition or bundling. Record measured size, checksum, licence, source, and version in the decision register.
+- A tool's `offline` registry value describes its tested readiness in the Docker/offline profile. It does not promise that a fresh browser visit to the online site will run without internet. If optional browser-cache support is implemented, its capability must be labelled separately and backed by actual tests.
+- ML tools require approved model weights in the Docker image before they can be declared fully offline. The online target may load an approved model from R2/CDN, but the user’s input and output remain local.
+- FFmpeg-based tools must use a reviewed FFmpeg WASM build. Record single-thread vs multi-thread selection, licences and memory/file limits. Verify COOP/COEP headers on the relevant Pages/R2 and Docker responses if multi-threading is selected.
+- Microphone, screen capture, clipboard and service workers require a secure context or supported local origin. Document HTTPS/localhost access and show a clear error for insecure LAN-IP origins where the relevant API is blocked.
+- Browser codec and format support varies; define fallbacks and explicit error states per tool.
 
 ## 17. Licensing and credits [NEW]
 
@@ -321,3 +310,11 @@ Rules:
 -   Use British English spelling in all user-facing copy, tool names,
     and documentation (for example "Normaliser", "Optimiser"). Tool
     names in the catalog follow this convention.
+
+## 19. Dependency and asset approval
+
+- Every dependency or asset used by either release target must have a verified licence and documented source/version. Record third-party assets in the credits/licences surface even when delivered through a CDN.
+- The `04-OFFLINE-FIRST-DECISIONS.md` localisation register is mandatory for fonts, libraries, WASM binaries, and models that must be packaged into the Docker/offline image. It is not a requirement to copy every online CDN asset into the repository.
+- Heavy assets (approximately 50 MB or more, including FFmpeg cores and ML weights) require an explicit owner decision before acquisition or distribution in either target.
+- Pin versions or immutable URLs where practical, verify checksums for downloadable binary assets, and keep an update/rebuild path documented.
+- Size figures in planning documents are estimates until measured; record the measured size when each asset is added.
