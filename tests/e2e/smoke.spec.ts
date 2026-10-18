@@ -119,3 +119,35 @@ test('offline reload and conversion work after SW install', async ({ page, conte
   await expect(page.locator('#offline-indicator')).toBeVisible();
   await context.setOffline(false);
 });
+
+test('sidebar groups the catalog by category with badges', async ({ page }) => {
+  await page.goto('/');
+  const sidebar = page.locator('#tool-sidebar');
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar.getByRole('heading', { name: 'Images & Assets' })).toBeVisible();
+  const link = sidebar.locator('a[href="/tools/base64-image-encoder"]');
+  await expect(link).toBeVisible();
+  await expect(link).toContainText('Base64 Image Encoder');
+  // Status + offline badges render from the registry (FR-21/FR-22).
+  await expect(link.locator('.badge').first()).toHaveText(/New/i);
+});
+
+test('category filter narrows the catalog (FR-23)', async ({ page }) => {
+  await page.goto('/');
+  // Default (all categories): the tool card is present.
+  await expect(page.locator('#tool-card-base64-image-encoder')).toBeVisible();
+  // Choose a category with no registered tools -> empty state, card hidden.
+  await page.selectOption('#category-filter', 'audio-video');
+  await expect(page.getByText('No tools match the current filters')).toBeVisible();
+  await expect(page.locator('#tool-card-base64-image-encoder')).toHaveCount(0);
+  // Return to the tool's own category -> card is back.
+  await page.selectOption('#category-filter', 'images-assets');
+  await expect(page.locator('#tool-card-base64-image-encoder')).toBeVisible();
+});
+
+test('works-offline filter keeps verified-offline tools (FR-23)', async ({ page }) => {
+  await page.goto('/');
+  await page.check('#offline-filter');
+  // base64-image-encoder is offline `full`, so it remains under the filter.
+  await expect(page.locator('#tool-card-base64-image-encoder')).toBeVisible();
+});
