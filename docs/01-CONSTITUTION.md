@@ -13,6 +13,11 @@ a `base64-image-encoder` tool, with room to add further tools. This
 constitution defines the constraints that future implementation work
 must preserve.
 
+[NEW] Product scope for this increment: 44 tools across three
+categories --- Images & Assets, Audio & Video, and Typography & Text ---
+catalogued in the PRD. Product inspiration: delphi.tools, used only as
+a functional reference; do not copy its code, branding, or copy text.
+
 ## 2. Non-negotiable architecture rules
 
 1.  **SvelteKit remains the application framework.** It owns routing,
@@ -50,6 +55,25 @@ must preserve.
 - Provide an offline indicator or similarly clear UI state where users need to know whether they are offline.
 - Document the distinction between a locally running Docker deployment and an installed browser PWA. Both must be tested if both are supported.
 - Docker must serve all runtime assets from the local application/container. Persistent data must use an explicit volume only where persistence is required; do not store irreplaceable user data solely in an ephemeral container layer.
+-   [NEW] PWA integration decision: before adopting any PWA
+    integration, verify and record whether SvelteKit's native
+    service-worker support (a `src/service-worker` module plus the
+    `$service-worker` module) or a Vite+-compatible PWA plugin is the
+    correct mechanism under the installed SvelteKit/Vite+ versions. Do
+    not assume a plugin name. The scaffold already ships a hand-written
+    `static/sw.js`; record whether it is kept, replaced, or superseded.
+-   [NEW] Self-host every WASM binary and ML model file used by a tool.
+    No runtime fetch from a CDN or any third-party origin.
+-   [NEW] Do not precache heavy assets for every tool up front. Provide
+    a per-tool "make available offline" action that shows the download
+    size before fetching and reports success or failure.
+-   [NEW] Handle storage-quota limits explicitly: check available
+    quota before large downloads and surface a clear, recoverable error
+    when quota is exceeded.
+-   [NEW] Track each tool's offline support in the registry as `full`,
+    `partial`, or `online-only`. No tool may be labelled `full` or
+    `partial` in the UI until its network-disabled verification has
+    passed.
 
 ## 4. Toolchain policy
 
@@ -124,6 +148,17 @@ Before considering a change complete:
 7.  Run Playwright smoke tests where browser dependencies are available.
 8.  Record any failed or skipped checks explicitly; do not describe an
     unexecuted check as passed.
+9.  [NEW] For any tool whose `offline` registry value changes, run the
+    tool's execution path with the browser network disabled and record
+    the result.
+10. [NEW] When a multi-threaded WASM component is present, verify that
+    `static/_headers` and the container web server both serve the
+    required COOP/COEP headers.
+11. [NEW] Verify by network inspection that a normal tool workflow
+    makes no request to a non-origin host and uploads nothing (privacy
+    rule in §13).
+12. [NEW] Update the credits/licenses list whenever a WASM build, ML
+    model, font, or library is added or upgraded.
 
 ## 8. Required build-output invariants
 
@@ -164,8 +199,11 @@ be confirmed to exist before use.
 -   Do not claim Vite+ migration is complete until install, checks,
     tests, build, preview, and output verification have been run or
     their omissions documented.
--   Do not add a PWA plugin or additional tools as part of this scaffold
-    unless that work is explicitly selected as the next increment.
+-   [REVISED] PWA/offline behavior is now a required feature (see §3).
+    Do not add or replace a PWA integration until the
+    SvelteKit-native vs. Vite+-compatible-plugin decision in §3 has
+    been verified and recorded. Additional tools remain separately
+    approved increments.
 -   Preserve the distinction between requirements stated in the source
     and assumptions that still need validation.
 
@@ -188,3 +226,98 @@ does not define product policies such as analytics, privacy, telemetry,
 accessibility targets, or a complete security model because the source
 does not specify them. Those decisions require separate
 product/engineering input.
+
+[REVISED] §13 now defines the privacy/local-only rule and §17 defines
+licensing; analytics remains out of scope entirely. Accessibility
+targets and a full security model are still undefined.
+
+## 13. Privacy and local-only processing [NEW]
+
+-   All tool processing happens in the user's browser on the user's
+    device.
+-   No user file, selection, recording, or derived output may be
+    uploaded to a server or sent to a third-party API.
+-   No telemetry, analytics, or tracking of any kind.
+-   The only permitted network traffic is fetching the application's
+    own self-hosted assets. Any tool that would require a remote
+    processing service is out of scope.
+-   Privacy claims must be verifiable: network inspection during a
+    tool workflow must show no non-origin requests.
+
+## 14. Tool contract [NEW]
+
+Each tool lives in `src/lib/tools/<tool-id>/` and consists of exactly
+three files:
+
+-   `Tool.svelte` --- the tool's UI.
+-   `logic.ts` --- the processing logic, unit-testable without the DOM
+    where practical.
+-   `meta.ts` --- tool metadata conforming to the shared registry
+    type.
+
+Rules:
+
+-   Tools must not import from other tools; shared helpers live under
+    `src/lib/`.
+-   CPU-heavy work runs in a Web Worker with progress reporting and
+    cancellation; `Tool.svelte` stays responsive.
+-   Every tool declares its `requires` capabilities and its `offline`
+    value honestly; capability failures produce clear error messages.
+-   A tool is registered and routable only after its increment is
+    separately approved.
+
+## 15. Registry, categories, and discovery [NEW]
+
+-   Registry fields: `id`, `name`, `category` (`images-assets` |
+    `audio-video` | `typography-text`), `icon`, `description`,
+    `status` (`new` | `beta` | `stable`), `offline` (`full` |
+    `partial` | `online-only`), `requires` (subset of `wasm` |
+    `ml-model` | `camera-mic-screen` | `clipboard`), and search
+    keywords.
+-   The sidebar is grouped by category; search uses Fuse.js over name,
+    description, and keywords; a category filter and a "works offline"
+    filter are available; status and offline badges are shown.
+-   Only the three catalogued categories are in scope for this
+    increment.
+
+## 16. Heavy assets, offline claims, and secure context [NEW]
+
+-   Self-host all WASM and model files; no runtime CDN dependency.
+-   Each tool that needs heavy assets offers a "make available
+    offline" download with the size shown; do not precache
+    everything.
+-   Storage-quota handling is mandatory for those downloads.
+-   A tool's offline value is a claim that must be backed by an actual
+    run with the network disabled; unverified tools make no offline
+    claim in the UI.
+-   ML tools: record model size, self-host the weights, and treat the
+    tool as offline-capable only after the model is cached; otherwise
+    mark it `online-only` or `beta`.
+-   ffmpeg.wasm: use a self-hosted core; decide and record
+    single-thread vs. multi-thread; serve COOP/COEP headers in
+    `static/_headers` and in the Docker/Podman web server when
+    multi-threading is used; document file-size and memory limits;
+    verify the license obligations of the exact build used.
+-   Secure context: microphone, screen capture, clipboard, and service
+    workers require HTTPS or localhost. Plain-HTTP access over a LAN
+    IP breaks them; document supported access patterns and surface a
+    clear error otherwise.
+-   Browser codec and format support varies; define fallbacks and
+    explicit error states per tool.
+
+## 17. Licensing and credits [NEW]
+
+-   Record the license of every third-party WASM build, ML model, JS
+    library, and font that ships or is fetched by the app.
+-   Provide a credits/licenses surface listing them.
+-   Do not ship a component whose license obligations are unverified;
+    in particular, verify the obligations of the exact ffmpeg.wasm
+    build before Phase C ships.
+-   Product inspiration (delphi.tools) is functional reference only;
+    do not copy its code, branding, or copy text.
+
+## 18. Language convention [NEW]
+
+-   Use British English spelling in all user-facing copy, tool names,
+    and documentation (for example "Normaliser", "Optimiser"). Tool
+    names in the catalog follow this convention.
