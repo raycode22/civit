@@ -1,13 +1,21 @@
 <script lang="ts">
 	import { UploadCloud } from '@lucide/svelte';
 
+	// [REVISED] Generic shared file input/drop wrapper (PRD FR-26): label and
+	// hint are configurable so any tool (not just image tools) can reuse it.
 	let {
 		accept = 'image/*',
 		disabled = false,
+		label = 'Drop an image here',
+		hint = 'or click to browse — processing stays on your device',
+		multiple = false,
 		onfile
 	}: {
 		accept?: string;
 		disabled?: boolean;
+		label?: string;
+		hint?: string;
+		multiple?: boolean;
 		onfile: (file: File) => void;
 	} = $props();
 
@@ -32,7 +40,7 @@
 	class="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-8 text-center transition-colors cursor-pointer
 		{dragging ? 'border-primary bg-primary/10' : 'border-base-300 bg-base-200/50'}
 		{disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-primary'}"
-	aria-label="Drop an image here or click to browse"
+	aria-label="{label} or click to browse"
 	ondragover={(e) => {
 		e.preventDefault();
 		if (!disabled) dragging = true;
@@ -49,12 +57,13 @@
 	id="file-drop-zone"
 >
 	<UploadCloud class="size-10 opacity-60" aria-hidden="true" />
-	<p class="font-medium">Drop an image here</p>
-	<p class="text-sm opacity-70">or click to browse — processing stays on your device</p>
+	<p class="font-medium">{label}</p>
+	<p class="text-sm opacity-70">{hint}</p>
 	<input
 		type="file"
 		class="hidden"
 		{accept}
+		{multiple}
 		bind:this={input}
 		onchange={(e) => handleFiles(e.currentTarget.files)}
 	/>

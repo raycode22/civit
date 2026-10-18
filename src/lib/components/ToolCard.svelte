@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ToolMeta } from '$lib/tools/types';
+	import { CATEGORY_LABELS } from '$lib/tools/categories';
 	import StatusBadge from './StatusBadge.svelte';
 
 	let { tool }: { tool: ToolMeta } = $props();
@@ -17,9 +18,9 @@
 				{/if}
 			</div>
 			<p class="text-sm opacity-80">{tool.description}</p>
-			<div class="card-actions mt-2 flex items-center gap-2">
-				<span class="badge badge-outline badge-sm capitalize">{tool.category}</span>
-				<StatusBadge offlineCapable={tool.offlineCapable} />
+			<div class="card-actions mt-2 flex items-center gap-2 flex-wrap">
+				<span class="badge badge-outline badge-sm">{CATEGORY_LABELS[tool.category]}</span>
+				<StatusBadge status={tool.status} offline={tool.offline} />
 			</div>
 		</div>
 	</div>
