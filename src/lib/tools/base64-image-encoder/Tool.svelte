@@ -11,12 +11,24 @@
 		MAX_FILE_BYTES,
 		type EncodeResult
 	} from './logic';
+	import { createEncodeWorker } from './encodeWorkerFactory';
+	import { createTaskWorker, TaskCancelledError } from '$lib/workers/taskWorker';
+	import { detectCapabilities } from '$lib/capabilities';
 
 	let error = $state<string | null>(null);
 	let result = $state<EncodeResult | null>(null);
 	let fileName = $state('');
 	let copied = $state(false);
 	let online = $state(true);
+	// [NEW] Worker-backed encoding state (PRD FR-25).
+	let encoding = $state(false);
+	let progress = $state(0);
+	let cancelled = $state(false);
+
+	// Task client is created lazily on the first encode so the worker chunk
+	// loads with the tool, not with the app shell (PRD FR-24).
+	let taskClient: ReturnType<typeof createTaskWorker<{ mime: string; bytes: ArrayBuffer }, EncodeResult>> | null =
+		$state(null);
 
 	function describeError(err: ReturnType<typeof validateImage>): string {
 		if (!err) return '';
@@ -30,23 +42,65 @@
 		}
 	}
 
+	function ensureTaskClient() {
+		if (taskClient) return taskClient;
+		if (!detectCapabilities().worker) return null;
+		taskClient = createTaskWorker(createEncodeWorker);
+		return taskClient;
+	}
+
+	function cancelEncode(): void {
+		taskClient?.cancel();
+	}
+
+	async function encode(
+		mime: string,
+		buffer: ArrayBuffer
+	): Promise<EncodeResult> {
+		const client = ensureTaskClient();
+		if (!client) {
+			// Capability fallback: encode inline on the main thread.
+			return encodeBytes(mime, new Uint8Array(buffer));
+		}
+		try {
+			return await client.run({
+				payload: { mime, bytes: buffer },
+				onProgress: (fraction) => (progress = fraction)
+			});
+		} catch (err) {
+			if (err instanceof TaskCancelledError) throw err;
+			// Worker failed (e.g. chunk not cached while offline): fall back to
+			// inline encoding so the tool keeps working (FR-18).
+			return encodeBytes(mime, new Uint8Array(buffer));
+		}
+	}
+
 	function handleFile(file: File): void {
 		error = null;
 		result = null;
+		cancelled = false;
 		const invalid = validateImage(file);
 		if (invalid) {
 			error = describeError(invalid);
 			return;
 		}
 		fileName = file.name;
+		encoding = true;
+		progress = 0;
 		const reader = new FileReader();
 		reader.onerror = () => (error = 'Could not read the file. Please try again.');
-		reader.onload = () => {
+		reader.onload = async () => {
 			try {
 				const buffer = reader.result as ArrayBuffer;
-				result = encodeBytes(file.type, new Uint8Array(buffer));
+				result = await encode(file.type, buffer);
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Encoding failed.';
+				if (e instanceof TaskCancelledError) {
+					cancelled = true;
+				} else {
+					error = e instanceof Error ? e.message : 'Encoding failed.';
+				}
+			} finally {
+				encoding = false;
 			}
 		};
 		reader.readAsArrayBuffer(file);
@@ -74,6 +128,7 @@
 	onDestroy(() => {
 		window.removeEventListener('online', setOnline);
 		window.removeEventListener('offline', setOffline);
+		taskClient?.terminate();
 	});
 
 	$effect(() => {
@@ -85,7 +140,7 @@
 <div class="flex flex-col gap-6 max-w-3xl mx-auto w-full">
 	<div class="flex items-center justify-between gap-4">
 		<h2 class="text-2xl font-bold">{meta.name}</h2>
-		<StatusBadge offlineCapable={meta.offlineCapable} />
+		<StatusBadge status={meta.status} offline={meta.offline} />
 	</div>
 	<p class="opacity-80 -mt-4">{meta.description}</p>
 
@@ -101,6 +156,27 @@
 	{/if}
 
 	<FileDropZone onfile={handleFile} />
+
+	{#if encoding}
+		<div class="flex items-center gap-3" id="encoder-progress">
+			<progress
+				class="progress progress-primary flex-1"
+				value={progress}
+				max="1"
+				aria-label="Encoding progress"
+			></progress>
+			<span class="text-sm opacity-70">{Math.round(progress * 100)}%</span>
+			<button type="button" class="btn btn-sm" onclick={cancelEncode} id="encoder-cancel">
+				Cancel
+			</button>
+		</div>
+	{/if}
+
+	{#if cancelled}
+		<div class="alert alert-info text-sm" role="status" id="encoder-cancelled">
+			Encoding cancelled.
+		</div>
+	{/if}
 
 	{#if error}
 		<div class="alert alert-error text-sm" role="alert" id="encoder-error">{error}</div>
