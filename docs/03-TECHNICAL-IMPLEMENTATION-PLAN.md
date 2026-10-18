@@ -1,9 +1,10 @@
-# Civit --- Technical Implementation Plan
+# Civit --- Multi-Tool Web App: Technical Implementation Plan
 
 **Document type:** Engineering tasks / implementation handoff\
-**Status:** Proposed plan derived from the supplied scaffold\
-**Primary outcome:** A reproducible, validated SvelteKit static
-application using Vite+ as its toolchain
+**Status:** Revised to separate online deployment from Docker/offline packaging.\
+**Primary outcome:** A reproducible SvelteKit static application using Vite+, published online through Cloudflare Pages + R2 and independently packaged as an offline-capable Docker image.
+
+**Target scope:** Stages 0–9 cover shared app/tooling. Online deployment requirements are defined in `05-ONLINE-DEPLOYMENT-PLAN.md`. Docker/offline asset localisation, packaging, and network-disabled release gates are defined in `06-DOCKER-OFFLINE-DEPLOYMENT-PLAN.md` and `04-OFFLINE-FIRST-DECISIONS.md`. Any instruction below to self-host assets or disable external runtime access applies to the Docker profile unless explicitly stated otherwise.
 
 ## 1. Implementation principles
 
@@ -131,7 +132,9 @@ unresolved failures are documented with evidence.
 
 -   [ ] Run `vp build`.
 -   [ ] Verify that `build/index.html` exists.
--   [ ] Verify that `build/tools/base64-image-encoder.html` exists.
+-   [ ] Verify that `build/tools/<tool-id>.html` exists for every
+    registered tool (for example `build/tools/base64-image-encoder.html`);
+    tool routes are prerendered (Stage 9A, FR-43).
 -   [ ] Verify that `build/_headers` exists.
 -   [ ] Verify that `build/theme-init.js` exists.
 -   [ ] Inspect generated output if `adapter-static` rejects the build
@@ -169,11 +172,10 @@ tests pass in an environment with required browser binaries.
 -   [ ] Document the verified Node.js version and install command.
 -   [ ] Document any Svelte-specific lint gap and any Vite+/Rolldown
     compatibility fallback.
--   [ ] Configure Cloudflare Pages with build command `vp build` or
-    `npm run build` and output directory `build`.
--   [ ] Confirm the deployment settings match the verified local build.
--   [ ] Do not claim deployment is verified until a real deployment
-    check has been performed.
+-   [ ] Follow `05-ONLINE-DEPLOYMENT-PLAN.md` to configure Cloudflare Pages with the verified build command and `build` output directory.
+-   [ ] Configure the online asset base URL to the existing R2 custom domain and verify CORS/cache headers for any assets loaded cross-origin.
+-   [ ] Keep the Docker asset base local and confirm no online URL is embedded in the Docker build.
+-   [ ] Do not claim either deployment target is verified until a real deployment/check has been performed.
 
 **Exit criteria:** Another developer can install, check, test, build,
 preview, and deploy using the documented instructions.
@@ -241,11 +243,12 @@ registry (FR-24); the worker chunk emits to
 -   [x] Add unit tests for the new helpers (ZIP assembly, capability
     error paths) where practical without a browser; cover the rest
     with Playwright.
--   [x] Verify by network inspection that no helper introduces
-    non-origin requests (FR-27). *(Evidence: the Playwright
-    client-side-encoding test fails on any non-GET request, and the
-    offline test runs with the network disabled; build output contains
-    no third-party origins.)*
+-   [x] Verify by network inspection that no helper uploads user content
+    or adds telemetry (FR-27). *(Source-plan evidence: the Playwright
+    client-side-encoding test fails on any non-GET request, and the original
+    build output contained no third-party origins at that time. This was a
+    baseline observation, not a policy that blocks the planned online R2/CDN
+    asset origins; re-run the target-aware audit after configuring them.)*
 
 **Exit criteria:** Helpers and patterns exist, are unit-tested, and
 are demonstrated by a minimal refactor of the existing Base64 encoder
@@ -256,44 +259,46 @@ Honest caveat: worker *cancel* is unit-tested against a mock worker
 large file is not covered by an automated E2E test (timing-dependent),
 so it is not claimed as E2E-verified.
 
-### Stage 10 --- PWA/offline implementation and verification [NEW]
+### Stage 9A --- Docker/offline asset audit, localisation, and tool-route prerendering [NEW]
 
-This stage implements the §5 verification matrix; the matrix rows are
-the exit evidence.
+**Status: NOT STARTED.** This stage audits and localises assets for the Docker/offline profile only. Online CDN/R2 references are allowed under `05-ONLINE-DEPLOYMENT-PLAN.md`. Nothing may be bundled into the Docker image before it is listed in `04-OFFLINE-FIRST-DECISIONS.md` and approved (Constitution §19, FR-41).
 
-**Status: IN PROGRESS.** The PWA decision record below is done (see
-`docs/decisions/ADR-001-pwa-integration.md`); the remaining items are
-**not** started and require the heavy-asset work in Phases B–D.
+-   [ ] Step 0: run `git status` and `git diff`; identify changes to the
+    offline feature and ensure only the explicitly separate Docker/offline
+    target uses the no-external-runtime rule.
+-   [ ] Audit the online runtime URL set and record each required origin in the online asset inventory. Separately audit the Docker profile and produce a list of external runtime references that must be eliminated from that build.
+-   [ ] Add every runtime dependency/asset to the credits/licence inventory. Add only those that must be local to the Docker profile to the localisation register (name, version/source, licence, measured size, checksum when practical) and wait for owner approval.
+-   [ ] Localise the approved Docker assets. Online builds may use R2 or approved CDN origins according to `05-ONLINE-DEPLOYMENT-PLAN.md`; add both downloaded and remotely delivered third-party components to credits/licences (FR-35).
+-   [ ] Prerender tool routes: enumerate tool ids with SvelteKit
+    `entries`, remove `prerender = false` from
+    `src/routes/tools/[id]/+page.ts`, keep the SPA fallback for unknown
+    routes, and confirm `build/tools/<tool-id>.html` exists (FR-43).
+-   [ ] Run each tool that currently carries `online-only` (for example
+    px-to-rem, word-counter, favicon-generator, image-clipper, where
+    present) against the Docker profile with external networking disabled;
+    set `offline` to `full` only on a recorded pass (FR-30). Any tool that
+    cannot reach `full` needs an owner-approved exception and a written
+    reason in its `meta.ts`.
+-   [ ] Replace per-tool "you are offline" warnings (for example in the
+    Base64 encoder `Tool.svelte`) with the single global offline
+    indicator (FR-44).
+-   [ ] Add a target-aware build check: online output permits only the Pages/R2/CDN allowlist, while Docker output must not require external runtime asset URLs (FR-40).
 
--   [x] Record the PWA integration decision: verify SvelteKit's native
-    service-worker support (a `src/service-worker` module plus the
-    `$service-worker` module) against a Vite+-compatible plugin under
-    the installed versions; document whether the existing hand-written
-    `static/sw.js` is kept, replaced, or superseded. Do not assume a
-    plugin name (Constitution §3). — **Done:** ADR-001 records the
-    evidence (installed kit declares `$service-worker`; no PWA plugin
-    present; hand-written `static/sw.js` kept for this increment).
--   [ ] Implement the documented caching strategy: app shell, routes,
-    tool catalog/metadata, and per-tool code for offline-supported
-    tools.
--   [ ] Self-host every WASM binary and ML model file; confirm no
-    runtime third-party origin fetch (FR-28).
--   [ ] Implement the per-tool "make available offline" action: show
-    download size before fetching, report success/failure, and handle
-    storage-quota exhaustion with a clear recoverable error (FR-29).
--   [ ] Implement cache versioning, update behavior, and recovery from
-    interrupted installation.
--   [ ] Add the offline indicator UI state.
--   [ ] Run every row of the §5 matrix that does not depend on
-    container-specific behavior (reload offline, tool execution
-    offline, asset audit, service-worker update, interrupted cache
-    population) and record the results.
--   [ ] For each tool that passes its network-disabled run, set its
-    registry `offline` value; downgrade any that fail (FR-30).
+**Exit criteria:** Online origin inventory and Docker asset-localisation register are complete; tool routes are prerendered; the allowlist-aware online audit passes; the Docker external-runtime audit passes; every tool released as offline-ready has a recorded Docker network-disabled run.
 
-**Exit criteria:** Every non-container row of the §5 matrix has a
-recorded pass; no tool carries an offline badge without a recorded
-verification; the PWA decision note is committed.
+### Stage 10 --- Docker runtime asset packaging and verification [NEW]
+
+**Status: NOT STARTED.** This stage is the Docker/offline release gate. The online PWA/service-worker cache is not a substitute for included assets and is not a prerequisite for Cloudflare Pages deployment.
+
+- [ ] Define a build-time profile flag (for example `CIVIT_TARGET=online` or `CIVIT_TARGET=docker`) and a single asset resolver so the online build may point to R2/CDNs while Docker always resolves required assets locally.
+- [ ] Use locked npm dependencies and build-time download scripts with pinned versions and checksums for approved heavy assets. Do not fetch assets at container runtime.
+- [ ] Build the final static output and copy only production output plus required assets into the runtime image; keep Node, Vite+, npm caches and `node_modules` out of the final Nginx image.
+- [ ] Confirm no production URL or environment value points to R2/CDNs in the Docker profile. Scan Docker output and inspect runtime requests.
+- [ ] Confirm that all released tools marked `offline: full` run with browser networking disabled against the Docker image.
+- [ ] If browser-PWA offline caching is retained for the hosted site, document it as a separate optional enhancement with separate cache/version/quota tests. Do not make its completion a condition for the online deployment.
+- [ ] Keep lazy-loading by tool so the initial application shell does not fetch every tool's heavy bundle even though all required Docker assets are packaged in the image.
+
+**Exit criteria:** The Docker image is self-contained at runtime; all released tools pass the network-disabled tool tests; the online profile and Docker profile resolve their asset origins independently.
 
 ### Stage 11 --- Docker/Podman deployment and secure context [NEW]
 
@@ -307,10 +312,12 @@ verification; the PWA decision note is committed.
 -   [ ] Make the container surface a clear in-app error when a
     secure-context feature is used from an insecure origin instead of
     failing silently (FR-32).
--   [ ] Run the container-specific §5 rows: Docker startup without
-    internet (image already present), Docker restart without internet,
-    and --- if that target is approved --- air-gapped first-time
-    deployment; record the results.
+-   [ ] Build the image online; confirm it contains every runtime asset
+    (fonts, libraries, WASM, and any approved models). Do not vendor
+    `node_modules` (FR-42).
+-   [ ] Run the container-specific §5 rows: startup and tool tests with
+    external networking disabled, restart without internet, and air-gapped
+    deployment via `docker save` / `docker load`; record the results.
 -   [ ] Verify persistence behavior matches the documented policy.
 -   [ ] Document the container build/run commands in the README once
     verified; do not document unverified commands.
@@ -352,21 +359,20 @@ purpose is unresolved.
 -   [ ] Select the libraries for Image Tracer, SVG Optimiser, Font
     File Explorer, and any [W] variants of Image Compressor/Converter;
     record versions and licenses (FR-35, Constitution §17).
--   [ ] Self-host the selected libraries; no runtime CDN fetch
-    (FR-28).
+-   [ ] Bundle the selected libraries in Docker; ensure online delivery continues to use its configured R2/CDN asset source as intended (FR-28).
 -   [ ] Load each library only via its tool's lazy-loading chunk
     (FR-24); route CPU-heavy tracing/optimisation through the worker
     pattern with progress and cancel (FR-25).
 -   [ ] Confirm the Image Converter/Compressor [W] vs. [L] path
     decision (PRD open questions) before implementing the library
     path.
--   [ ] Verify each shipped tool with the network disabled after its
-    library is cached; set the registry `offline` value accordingly
-    (FR-30).
+-   [ ] Verify each shipped tool with external networking disabled against
+    the Docker profile after its approved library has been packaged; set
+    the registry `offline` value accordingly (FR-30).
 
-**Exit criteria:** Each shipped Phase B tool runs offline after its
-self-hosted library is cached, with recorded verification, license
-entries, and passing tests.
+**Exit criteria:** Each shipped Phase B tool runs offline in Docker with its
+approved local library, with recorded verification, licence entries, and
+passing tests. Online delivery is separately tested via R2/CDN.
 
 ### Stage 14 --- Phase C: ffmpeg-based audio/video tools [NEW]
 
@@ -374,8 +380,11 @@ entries, and passing tests.
     single-thread vs. multi-thread, resulting COOP/COEP header
     requirement, file-size and memory limits, and the license
     obligations of that exact build (FR-31, Constitution §16/§17).
--   [ ] Self-host the ffmpeg.wasm core assets; include them in the
-    per-tool "make available offline" flow with size shown (FR-29).
+-   [ ] Ask the owner to approve the exact ffmpeg.wasm build (about 30 MB
+    estimated; measure and record the real size) before downloading it.
+-   [ ] Configure approved FFmpeg assets on the online R2/CDN source and
+    bundle the same approved asset into the Docker image. Browser-PWA
+    "make available offline" is optional and separate (FR-29).
 -   [ ] Implement each Phase C tool as a separately approved
     increment: Audio Extractor, Audio Normaliser, Audio Trimmer,
     Frame Extractor, Video Muter, Video to GIF, Video Trimmer, and the
@@ -387,35 +396,36 @@ entries, and passing tests.
     states for unsupported inputs (FR-34).
 -   [ ] Re-run the Stage 11 header parity check if the threading
     decision changed.
--   [ ] Verify each shipped tool with the network disabled after its
-    assets are cached; set the registry `offline` value (FR-30).
+-   [ ] Verify each shipped tool with external networking disabled against
+    the Docker profile after its required assets have been packaged; set
+    the registry `offline` value (FR-30).
 
-**Exit criteria:** The ffmpeg.wasm decision and license obligations
-are recorded; each shipped Phase C tool passes its offline
-verification with progress/cancel working; unsupported formats
-produce explicit errors.
+**Exit criteria:** The ffmpeg.wasm decision and licence obligations are
+recorded; each shipped Phase C tool passes its Docker offline verification
+with progress/cancel working; online asset delivery and any cross-origin
+headers also pass their own tests; unsupported formats produce explicit errors.
 
 ### Stage 15 --- Phase D: ML tools [NEW]
 
 -   [ ] Select the models for Background Remover, Auto Subtitle, and
     any ML Artwork Enhancer scope; record model size and license
-    (FR-33, Constitution §17).
--   [ ] Self-host all model weights; no runtime CDN or third-party
-    model fetch (FR-28).
--   [ ] Implement each Phase D tool as a separately approved
-    increment, with inference in a worker and progress/cancel (FR-25).
--   [ ] Wire models into the per-tool "make available offline" flow
-    with size shown; enforce storage-quota handling (FR-29).
--   [ ] Until a model is cached and verified, ship the tool as
-    `online-only` or `beta`; only after a network-disabled run with
-    the model cached may it claim `full` or `partial` (FR-33, FR-30).
+    (FR-33, Constitution §17). Present each model (size, licence) to the
+    owner and wait for approval before downloading or bundling it.
+-   [ ] Configure online model assets to use the approved R2/CDN source.
+-   [ ] Implement each Phase D tool as a separately approved increment,
+    with inference in a worker and progress/cancel (FR-25).
+-   [ ] Bundle approved models in the Docker image. Browser-PWA
+    "make available offline" flows are optional and separate work (FR-29).
+-   [ ] Do not release an ML tool as `offline: full` in the Docker profile
+    until its model is packaged locally and the network-disabled run passes
+    (FR-33, FR-30).
 -   [ ] Record each model's size in the credits/licenses listing
     (FR-35).
 
-**Exit criteria:** Each shipped Phase D tool has a recorded
-network-disabled verification with its model cached, its registry
-status matches reality (no premature `full`), and its model license
-and size are documented.
+**Exit criteria:** Each shipped Phase D tool has a recorded Docker
+network-disabled verification with its model local; owner approval is
+recorded; registry status matches reality (no premature `full`); and
+model licence/size are documented. Online model delivery is verified separately.
 
 ## 3. File-level handoff
 
@@ -471,13 +481,19 @@ and size are documented.
 | `src/lib/` shared helpers | File input/drop, download, ZIP export, capability detection (FR-26) |
 | Web Worker modules | Per-tool workers with progress/cancel pattern (FR-25) |
 | `static/_headers` | Preserve; add COOP/COEP only if multi-threaded ffmpeg.wasm is selected (FR-31) |
-| `static/` self-hosted assets | Add self-hosted WASM cores and ML model weights; never reference a CDN (FR-28) |
+| Profile-specific asset resolver / `static/` | Online build resolves approved R2/CDN URLs; Docker build includes approved local WASM/model assets and never requires external runtime URLs (FR-28) |
 | PWA/service-worker files | Add per the Stage 10 decision (SvelteKit-native vs. plugin); the existing `static/sw.js` fate is part of that decision |
 | `nginx/default.conf` | Mirror COOP/COEP header parity with `_headers` when required; keep SPA fallback |
 | Container Dockerfile/compose | Preserve; verify offline startup rows of the §5 matrix (FR-17) |
 | Credits/licenses surface | New page or section listing third-party WASM/models/libraries/fonts (FR-35) |
 | `tests/unit/` | Add tests for registry schema, search/filters, shared helpers, and each tool's `logic.ts` |
 | `tests/e2e/` | Extend smoke tests to sidebar/search/filters and per-tool offline runs |
+| `src/routes/tools/[id]/+page.ts` | Remove `prerender = false`; add `entries` that enumerate registered tool ids (FR-43) |
+| Fonts and CSS | Online profile may use approved CDN delivery; Docker profile uses bundled local files (FR-40) |
+| Build check script | Online build enforces an origin allowlist; Docker build fails if required runtime assets reference external URLs (FR-40) |
+| `tests/e2e/` offline suite | Playwright with `context.setOffline(true)` loading every tool and reloading a tool URL (FR-39, FR-43) |
+| Dockerfile / README | Online build, offline runtime; document `docker save` / `docker load` and `--network none` runs once verified (FR-42) |
+| `04-OFFLINE-FIRST-DECISIONS.md` | Record owner decisions for Docker-localised assets; online asset origins and licences are tracked in `05-ONLINE-DEPLOYMENT-PLAN.md` (FR-41) |
 
 ## 4. Suggested commands
 
@@ -504,30 +520,38 @@ this is compatible with the repository's selected package workflow. The
 source also describes `npm run sync` as an explicit SvelteKit sync
 escape hatch.
 
-## 5. Offline and Docker verification matrix
+## 5. Deployment verification matrices
+
+### 5.1 Online Cloudflare Pages + R2
 
 | Scenario | Method | Expected result |
 |---|---|---|
-| First visit with internet | Open local Docker URL in a clean browser | App loads and required PWA assets can be cached |
-| Reload while offline | Disable network and reload | App shell and required routes load from local cache |
-| Tool execution while offline | Disable network and use each offline-supported tool | Tool completes without required remote requests |
-| Local asset audit | Inspect browser network requests and built output | Required assets come from the local origin or cache |
-| Docker restart without internet | Stop/start the already-built container with network unavailable | App serves normally |
-| Service-worker update | Deploy a new asset/cache version and reopen app | Update completes without mixed-version breakage |
-| Interrupted cache population | Simulate failed/partial installation where practical | App fails safely and recovers when resources are available |
-| Air-gapped first-time deployment (conditional) | Transfer image/artifacts to a clean offline machine | Image imports and app starts without downloading dependencies |
+| Production build | Run the verified Vite+ build command in Pages with the pinned Node version | Build succeeds and publishes `build/` |
+| Public routes | Open the root and every `/tools/<tool-id>` URL directly; reload each | Static routes work without depending on a development server |
+| R2 assets | Open the largest deployed assets over the production custom domain | Correct MIME type, CORS, cache headers and status; no use of `r2.dev` in production |
+| Cross-origin dependencies | Inspect browser network requests | Only Pages, configured R2, and explicitly allowlisted third-party CDN origins are used |
+| Lazy loading | Open the landing page, then individual tools | Tool-specific libraries and large assets are fetched only when needed |
+| Privacy | Run representative tool workflows with network inspection | No user files/results are uploaded and no analytics/telemetry is emitted |
+| Budget | Review Pages/R2 usage metrics | Usage is within current free-tier allowances or a deliberate cost decision is recorded |
+| Updates | Deploy a new version of content-hashed assets | Old cacheable URLs remain immutable; mutable entry documents can discover the new release |
 
-### Additional matrix rows for Stages 10-11 [NEW]
+### 5.2 Docker/offline release
 
 | Scenario | Method | Expected result |
 |---|---|---|
-| Per-tool offline verification | Disable network, run one tool end-to-end, record result | Result recorded; registry `offline` value set only on pass (FR-30) |
-| "Make available offline" flow | Trigger the per-tool asset download | Size shown before download; success/failure reported (FR-29) |
-| Storage-quota exhaustion | Simulate or trigger quota failure during asset download | Clear recoverable error; no broken cache state (FR-29) |
-| Self-hosted WASM/model audit | Inspect built output and network panel | All WASM/model bytes from the local origin; no CDN (FR-28) |
-| COOP/COEP parity | Compare `static/_headers` with container response headers | Identical cross-origin headers when multi-threading is enabled (FR-31) |
-| Insecure-context feature use | Open app over plain-HTTP LAN IP, use mic/screen/clipboard tools | Visible documented error; no silent failure (FR-32) |
-| ML tool before model cache | Use an ML tool with model not yet cached | Tool reports state; marked `online-only`/`beta`, not `full` (FR-33) |
+| Asset completeness | Inspect final image contents and asset manifest | Every approved runtime dependency required by released tools is present locally |
+| No external asset base | Build the Docker profile and inspect compiled asset URLs | No required runtime asset references R2/CDNs |
+| Offline startup | Start the completed image with external network access disabled | Nginx serves the app and required assets without external requests |
+| Tool execution offline | Disable browser network and run each released tool against the Docker build | Every tool marked `offline: full` completes its workflow |
+| Direct route reload | Open/reload `/tools/<tool-id>` URLs | Prerendered route files are served correctly |
+| Save/load | Export image with `docker save`, transfer, import with `docker load` on an offline system | Container starts without pulling image layers or dependencies |
+| Headers | Check container responses; check online Pages/R2 where relevant | COOP/COEP and WASM MIME/CORS behavior matches the selected threading/delivery strategy |
+| Privacy | Inspect request logs and browser network trace | No user-content uploads, telemetry or required external runtime requests |
+| Rebuild reproducibility | Rebuild from lockfile and approved asset manifest | Versions/checksums and output are reproducible; updates are deliberate |
+
+### 5.3 Optional browser-PWA offline enhancement
+
+This is not a release gate for the online deployment unless explicitly brought back into scope. If implemented, test cache population, reload offline, tool execution, version updates, interrupted downloads, quota errors, and whether cross-origin assets can actually be cached under the configured CORS policy.
 
 ## 6. Risk register
 
@@ -568,11 +592,15 @@ escape hatch.
 | ffmpeg.wasm file-size/memory limits cause tab crashes on large media | Poor UX; lost work | Enforce documented limits with clear errors; run ffmpeg in a worker; test with representative large files |
 | ffmpeg.wasm license obligations of the exact build are non-trivial | Compliance risk | Record the exact build and its license before Phase C; add to credits/licenses; do not ship until verified |
 | Secure-context features silently fail over plain-HTTP LAN access to the container | User-visible breakage of mic/screen/clipboard/PWA features | Document supported access patterns; add explicit capability errors (FR-32) |
-| ML model weights are large; self-hosting plus caching may exceed typical storage quotas | Offline claim unachievable; quota errors | Record sizes, implement quota handling, ship as `online-only`/`beta` until verified |
+| ML model weights are large; bundling and caching may exceed typical storage quotas or bloat the image | Large image; quota errors for PWA-only use | Record measured sizes, ask the owner before bundling each model, prefer smaller or quantised models, and ship Phase D last |
 | Browser codec/format support varies (MediaRecorder, image encoders, audio decode) | Tool fails on some browsers | Per-tool fallbacks and explicit error states (FR-34); define a browser baseline |
 | Service-worker cache serves stale tool code after updates | Broken tool versions | Versioned caches; tested update flow (Stage 10) |
-| Third-party WASM/ML/library licenses incompatible with the project's distribution | Legal risk; rework | Verify licenses before adoption; credits/licenses requirement (FR-35) |
+| Third-party CDN/R2-delivered WASM/ML/library licence or version is unsuitable | Legal/security risk; rework | Verify licence, provenance, version pinning, integrity where available, and include it in credits (FR-35) |
 | Registering unapproved tools from the catalog by accident | Scope creep | Registry only accepts approved tools; per-tool approval gate (FR-37) |
+| Safari/iOS evicts cached data or has small quotas for optional PWA use | Cached assets may disappear | Do not promise browser offline availability without tests; Docker remains the self-contained offline target |
+| Vendored fonts or libraries have licence obligations | Compliance risk | Register each asset with licence before adding it (FR-35, FR-41) |
+| Image build needs the internet and base images are missing on the offline machine | Air-gapped deployment fails | Export the built image with `docker save`, including base images; verify on a clean offline machine (FR-42) |
+| Prerendered tool routes drift from the registry | Missing or stale tool HTML | Enumerate ids from the registry via `entries`; assert files exist in the build check (FR-43) |
 
 ## 7. Definition of done
 
@@ -600,24 +628,25 @@ The handoff is complete when:
     capability detection) exist with tests, and tools use them.
 -   [ ] [NEW] CPU-heavy tools run in workers with demonstrated
     progress and cancel (Stage 9).
--   [ ] [NEW] The PWA integration decision (SvelteKit-native vs.
-    Vite+-compatible plugin) is recorded with evidence; no plugin name
-    was assumed (Stage 10).
+-   [ ] [NEW] If browser-PWA caching is retained, its integration choice
+    (SvelteKit-native vs. Vite+-compatible plugin) is verified with evidence
+    and tracked as separate work; it is not required for Pages launch.
 -   [ ] [NEW] Every row of the §5 matrix --- original and added ---
     has a recorded pass, a recorded failure, or a documented blocker;
     no offline claim exists without a recorded network-disabled run
     (Stages 10-11).
--   [ ] [NEW] All WASM binaries and ML models are self-hosted with no
-    runtime third-party origin requests (FR-28).
--   [ ] [NEW] Per-tool "make available offline" shows size and handles
-    quota exhaustion with a clear error (FR-29).
+-   [ ] [NEW] Online WASM/models load from approved R2/CDN origins;
+    Docker bundles its required assets and makes no external runtime requests
+    (FR-28).
+-   [ ] [NEW] Browser-PWA "make available offline" size/quota handling is
+    checked only if this optional feature is implemented (FR-29).
 -   [ ] [NEW] Supported secure-context access patterns are documented
     and insecure origins fail visibly (FR-32).
 -   [ ] [NEW] ffmpeg.wasm build, threading mode, limits, and license
     obligations are recorded; header parity is verified if
     multi-threading is enabled (FR-31).
--   [ ] [NEW] ML tools are `online-only`/`beta` until their model
-    cache is verified offline (FR-33).
+-   [ ] [NEW] ML tools are not released until their model is local, owner
+    approval is recorded, and a network-disabled run passes (FR-33).
 -   [ ] [NEW] The credits/licenses listing exists and covers all
     third-party assets (FR-35).
 -   [ ] [NEW] Each shipped tool follows the `Tool.svelte`/`logic.ts`/
@@ -626,6 +655,19 @@ The handoff is complete when:
 -   [ ] [NEW] No out-of-scope feature (other categories, featured
     section, favorites/recents, tool-to-tool hand-off, CLI, accounts,
     analytics) was built.
+-   [ ] [NEW] The Docker/offline build and every released tool pass
+    network-disabled Playwright checks and container startup with
+    external networking disabled (FR-39).
+-   [ ] [NEW] The online origin allowlist audit and Docker no-external-runtime-asset audit both pass (FR-40).
+-   [ ] [NEW] Every localised asset has an owner approval in the
+    localisation register (FR-41).
+-   [ ] [NEW] The image builds online, runs offline, and loads on a clean
+    offline machine via `docker save` / `docker load` (FR-20, FR-42).
+-   [ ] [NEW] Tool routes are prerendered, `build/tools/<tool-id>.html`
+    exists for every registered tool, and a direct reload works offline
+    (FR-43).
+-   [ ] [NEW] Connection/offline state is accurate and never implies that
+    uncached online assets are available offline (FR-44).
 
 ## 8. Handoff note
 
@@ -643,3 +685,10 @@ plans, not approvals. Nothing in this plan may be reported as verified
 until it has actually been run and its result recorded; in particular,
 no tool may be labelled offline, and no dependency's license may be
 listed as verified, on the basis of this document alone.
+
+[NEW] Docker/offline decisions and the localised-asset register are recorded in
+`04-OFFLINE-FIRST-DECISIONS.md`; online publishing/asset delivery is defined in
+`05-ONLINE-DEPLOYMENT-PLAN.md`. Size figures are estimates until measured.
+Docker-localised dependencies, fonts, WASM binaries, and models must be listed
+and approved before bundling; heavy features (FFmpeg and ML models) require an
+explicit per-asset decision.
