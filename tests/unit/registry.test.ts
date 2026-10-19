@@ -49,7 +49,8 @@ describe('tool registry schema (PRD FR-21)', () => {
       'px-to-rem',
       'word-counter',
       'favicon-generator',
-      'image-clipper'
+      'image-clipper',
+      'metadata-stripper'
     ]);
     for (const tool of tools) {
       if (tool.offline !== 'online-only') {

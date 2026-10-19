@@ -195,3 +195,15 @@ test('image-clipper runs with the network disabled (FR-30)', async ({ page, cont
   await expect(page.locator('#offline-indicator')).toBeVisible();
   await context.setOffline(false);
 });
+
+test('metadata-stripper runs with the network disabled (FR-30)', async ({ page, context }) => {
+  const errors = failFastOffline(page);
+  await goOfflineOn(page, context, '/tools/metadata-stripper', errors);
+  await expect(page.getByRole('heading', { name: 'Metadata Stripper' })).toBeVisible();
+  await page.setInputFiles('#file-drop-zone input[type="file"]', PNG_FIXTURE);
+  await expect(page.locator('#stripper-output')).toBeVisible();
+  const value = await page.locator('#stripper-output-text').inputValue();
+  expect(value.startsWith('data:image/png;base64,')).toBe(true);
+  await expect(page.locator('#offline-indicator')).toBeVisible();
+  await context.setOffline(false);
+});

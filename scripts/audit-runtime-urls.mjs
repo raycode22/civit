@@ -106,7 +106,7 @@ function isSpaceChar(ch) {
 }
 
 function isQuote(ch) {
-  return ch === "'" || ch === "'" || ch === '`';
+  return ch === '"' || ch === "'" || ch === '`';
 }
 
 function isIdentChar(ch) {

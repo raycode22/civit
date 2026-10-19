@@ -4,6 +4,7 @@ import { meta as pxToRemMeta } from '$tools/px-to-rem/meta';
 import { meta as wordCounterMeta } from '$tools/word-counter/meta';
 import { meta as faviconGeneratorMeta } from '$tools/favicon-generator/meta';
 import { meta as imageClipperMeta } from '$tools/image-clipper/meta';
+import { meta as metadataStripperMeta } from '$tools/metadata-stripper/meta';
 
 /**
  * Central tool registry. Adding a tool means registering its metadata and a
@@ -34,6 +35,10 @@ export const tools: Tool[] = [
   {
     ...imageClipperMeta,
     component: () => import('$tools/image-clipper/Tool.svelte')
+  },
+  {
+    ...metadataStripperMeta,
+    component: () => import('$tools/metadata-stripper/Tool.svelte')
   }
 ];
 
