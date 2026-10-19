@@ -6,6 +6,10 @@
   "scripts": {
     "dev": "vp dev",
     "build": "vp build",
+    "build:docker": "CIVIT_TARGET=docker vp build && node scripts/verify-manifest.mjs build && node scripts/audit-runtime-urls.mjs build --target=docker",
+    "audit:online": "node scripts/audit-runtime-urls.mjs build --target=online",
+    "audit:docker": "node scripts/audit-runtime-urls.mjs build --target=docker",
+    "verify:docker": "node scripts/verify-manifest.mjs build && node scripts/audit-runtime-urls.mjs build --target=docker",
     "preview": "vp preview",
     "check": "vp check && svelte-check --tsconfig ./tsconfig.json",
     "test": "vp test run",

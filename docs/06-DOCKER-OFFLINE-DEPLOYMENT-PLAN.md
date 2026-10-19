@@ -8,7 +8,7 @@
 
 Produce an image that can be built while connected to the internet, transferred to another machine, started locally, and used with external networking disabled. Every released tool marked `offline: full` must operate from assets packaged into the image.
 
-This is not the online Pages build with a network switch. It is a separate build profile from the same codebase, using a local asset base and its own build-output validation. Do not add the online R2 domain or third-party CDN URLs to the Docker runtime bundle.
+This is not the online Pages build with a network switch. It is a separate build profile from the same codebase, using a local asset base and its own build-output validation. Do not add Hugging Face, R2 or third-party CDN URLs to the Docker runtime bundle.
 
 ## 2. Target architecture
 
@@ -34,7 +34,7 @@ Runtime machine (external network unavailable)
 - Use the same SvelteKit/Vite+ source tree; do not maintain a second copy of app code.
 - Add an explicit build-time target setting (for example `CIVIT_TARGET=docker`). Implement it through the project's existing config/scripts and verify the current Vite+ version supports the final implementation. Do not assume an unverified CLI flag.
 - The target setting controls only asset origins/packaging and any target-specific metadata. Shared component logic and tool behavior should remain the same.
-- Centralize public asset resolution. For `online`, the resolver may return `https://assets.<your-domain>/...`; for Docker, it must resolve to a relative local path such as `/assets/...`.
+- Centralize public asset resolution. For `online`, the resolver returns Pages-relative paths, and Hugging Face Hub URLs for ML model files; for Docker, it must resolve to a relative local path such as `/assets/...`.
 - Do not build once for online and copy that output into Docker. Produce and inspect a distinct Docker build output.
 - Use an asset manifest to list each file expected in the Docker image. Verify required manifest entries at build time.
 
@@ -44,7 +44,7 @@ Runtime machine (external network unavailable)
 2. Do not commit `node_modules`, downloaded build caches, or derived artifacts into Git.
 3. Download large runtime binaries/models only after the owner approves the exact asset in `04-OFFLINE-FIRST-DECISIONS.md`. Pin versions and use SHA-256 checksums; fail the build if a required asset is missing or has the wrong hash.
 4. Capture licences and required notices for all libraries, fonts, WASM builds and ML weights. Ship the credits/licences surface and any required licence files in the image.
-5. Do not download an asset during container startup. Runtime code must not fall back to R2/CDNs if a local file is missing; fail visibly rather than violating the offline guarantee.
+5. Do not download an asset during container startup. Runtime code must not fall back to Hugging Face, R2 or CDNs if a local file is missing; fail visibly rather than violating the offline guarantee.
 
 ## 5. Multi-stage image design
 
@@ -55,7 +55,7 @@ Use a multi-stage build:
 - Keep Node, Vite+, npm, `node_modules`, tests, source files and package caches out of the runtime stage unless a concrete runtime requirement justifies inclusion.
 - Pin base image versions, preferably immutable digests in release CI, and define a deliberate update cadence so security fixes are not frozen forever.
 - Configure correct MIME types for `.wasm`, fonts and other static assets; set caching for content-hashed files; include any required CSP and COOP/COEP response headers.
-- Compress text assets and use precompressed static files only if Nginx is explicitly configured and end-to-end tests verify content negotiation. Do not add compression complexity without a measured gain.
+- Serve precompressed static text and WASM assets (Brotli where supported, gzip otherwise). Verify which Nginx image or module provides Brotli (`gzip_static` is the fallback), test content negotiation end to end, and record the size gain.
 
 ## 6. Image size and performance
 
@@ -63,7 +63,8 @@ Use a multi-stage build:
 - Prefer browser-native APIs for simple tasks and share large runtimes (for example one approved FFmpeg core) across tools where practical.
 - Avoid duplicate versions of a library/model, development dependencies in the runtime image, source maps/test fixtures in production, and unneeded locales/encoders.
 - Measure image size with `docker image inspect` and the export archive size. Report actual numbers; treat existing 40–50 MB and 150–300 MB figures as estimates only.
-- If full ML assets materially increase image size, do not silently omit them or invent a slim/full release matrix; record the actual choices and obtain owner approval for changes to what the image includes.
+- Size budget: about 300 MB or less for the single image (owner-set target; estimate). If the measured image exceeds it, stop and ask the owner about smaller or quantised models or a slim variant. Do not silently omit assets or add a slim/full release matrix without approval.
+- Prefer the smallest quantised model with acceptable quality, and ask the owner before bundling each one.
 
 ## 7. Runtime security and privacy
 
@@ -114,4 +115,6 @@ With `--network none`, confirm the web server from inside the container (for exa
 - [ ] The container starts and serves files without external networking.
 - [ ] `docker save` / `docker load` transfer has been tested on a clean offline machine, including base-image layers.
 - [ ] Image size, export size, asset hashes, licences, source commit and base-image identifiers are recorded.
+- [ ] Measured image size is within the owner-set budget (about 300 MB or less), or an approved exception is recorded.
+- [ ] Static text and WASM assets are served precompressed and the size gain is recorded.
 - [ ] No user files/outputs are uploaded and no telemetry or analytics is emitted.

@@ -44,7 +44,12 @@ self.addEventListener('install', (event) => {
     caches
       .open(PRECACHE)
       .then((cache) => cache.addAll(PRECACHE_URLS))
-      .then(self.skipWaiting)
+      // [Stage 9A] Call through arrow wrappers: passing `self.skipWaiting` /
+      // `self.clients.claim` detached from its receiver throws
+      // "Illegal invocation" in Chromium, so the original activate chain
+      // rejected and clients were never claimed — intermittently leaving
+      // pages uncontrolled so navigations skipped runtime caching.
+      .then(() => self.skipWaiting())
       .catch((err) => {
         // Interrupted/partial installation: do not claim clients; keep the
         // existing service worker serving traffic. Retry happens on next
@@ -64,7 +69,7 @@ self.addEventListener('activate', (event) => {
           keys.filter((k) => k !== PRECACHE && k !== RUNTIME).map((k) => caches.delete(k))
         )
       )
-      .then(self.clients.claim)
+      .then(() => self.clients.claim())
   );
 });
 

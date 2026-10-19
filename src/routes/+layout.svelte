@@ -2,6 +2,7 @@
 	import '../app.css';
 	import type { Snippet } from 'svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import OfflineIndicator from '$lib/components/OfflineIndicator.svelte';
 	import { theme } from '$lib/theme/theme.svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -22,10 +23,13 @@
 		</div>
 		<div class="flex-none gap-2">
 			<ThemeToggle />
+			<a href="/credits" class="btn btn-sm btn-ghost">Credits</a>
 		</div>
 	</header>
 
 	<main id="main" class="flex-1 px-4 py-8 lg:px-8 max-w-6xl mx-auto w-full">
+		<!-- [Stage 9A, FR-44] The one global offline indicator (D-20 scope). -->
+		<OfflineIndicator />
 		{@render children()}
 	</main>
 

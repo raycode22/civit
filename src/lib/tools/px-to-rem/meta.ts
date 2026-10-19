@@ -13,7 +13,7 @@ export const meta: ToolMeta = {
   keywords: ['px', 'rem', 'convert', 'css', 'typography', 'font-size', 'responsive'],
   category: 'typography-text',
   status: 'new',
-  offline: 'online-only',
+  offline: 'full',
   requires: [],
   icon: Ruler
 };

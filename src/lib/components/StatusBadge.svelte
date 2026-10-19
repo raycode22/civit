@@ -3,6 +3,8 @@
 
 	// [REVISED] Shows the registry status badge and the offline-support badge
 	// (PRD FR-21, FR-22). Values come only from the tool registry.
+	// [Stage 9A, D-20] The `full` label is "Offline-ready (Docker)": offline
+	// claims apply to the self-contained Docker/offline target only.
 	let { status, offline }: { status: ToolStatus; offline: OfflineSupport } = $props();
 
 	const STATUS_LABEL: Record<ToolStatus, string> = { new: 'New', beta: 'Beta', stable: 'Stable' };
@@ -18,7 +20,7 @@
 	};
 
 	const OFFLINE_LABEL: Record<OfflineSupport, string> = {
-		full: 'Works offline',
+		full: 'Offline-ready (Docker)',
 		partial: 'Partial offline',
 		'online-only': 'Online only'
 	};
@@ -28,9 +30,9 @@
 		'online-only': 'badge-neutral'
 	};
 	const OFFLINE_TITLE: Record<OfflineSupport, string> = {
-		full: 'Verified to run with the network disabled',
+		full: 'Verified to run in the Docker/offline build with the network disabled',
 		partial: 'Core functions run offline; some assets need a one-time download',
-		'online-only': 'Not yet usable without a network connection'
+		'online-only': 'Not yet verified for the Docker/offline build'
 	};
 </script>
 

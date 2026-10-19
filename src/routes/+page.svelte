@@ -7,7 +7,7 @@
 	import type { ToolCategory, OfflineSupport } from '$lib/tools/types';
 
 	let query = $state('');
-	// [NEW] Category filter and "works offline" filter (PRD FR-23).
+	// [NEW] Category filter and offline-ready filter (PRD FR-23, D-20).
 	let categoryFilter = $state<ToolCategory | ''>('');
 	let offlineOnly = $state(false);
 
@@ -23,10 +23,17 @@
 	}
 
 	// Compact offline labels for the sidebar (the cards show the full badges).
+	// [Stage 9A, D-20] The full label is "Offline-ready (Docker)"; the sidebar
+	// uses a compact form scoped to the same target.
 	const SIDEBAR_OFFLINE_LABEL: Record<OfflineSupport, string> = {
-		full: 'Offline',
+		full: 'Offline (Docker)',
 		partial: 'Partial',
 		'online-only': 'Online'
+	};
+	const SIDEBAR_OFFLINE_TITLE: Record<OfflineSupport, string> = {
+		full: 'Offline-ready (Docker) — verified with the network disabled',
+		partial: 'Partial offline support',
+		'online-only': 'Not yet verified for the Docker/offline build'
 	};
 </script>
 
@@ -75,7 +82,7 @@
 					id="offline-filter"
 					bind:checked={offlineOnly}
 				/>
-				<span class="label-text text-sm">Works offline</span>
+				<span class="label-text text-sm">Offline-ready (Docker)</span>
 			</label>
 		</div>
 	</section>
@@ -106,7 +113,7 @@
 														: tool.offline === 'partial'
 															? 'badge-warning'
 															: 'badge-neutral'}"
-													title={SIDEBAR_OFFLINE_LABEL[tool.offline]}
+													title={SIDEBAR_OFFLINE_TITLE[tool.offline]}
 												>
 													{SIDEBAR_OFFLINE_LABEL[tool.offline]}
 												</span>

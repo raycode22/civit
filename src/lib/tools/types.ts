@@ -51,6 +51,10 @@ export interface Tool extends ToolMeta {
    * [REVISED] Lazy loader for the tool's UI. The tool's chunk (and any
    * heavy libraries it imports) is fetched only when its route opens
    * (PRD FR-24), so the initial bundle stays small.
+   *
+   * [Stage 9A] Components receive the tool's own metadata as a prop, so the
+   * route renders `<ToolComponent meta={tool} />`. Prop-less components (e.g.
+   * the Base64 encoder, which imports its meta statically) remain assignable.
    */
-  component: () => Promise<{ default: Component }>;
+  component: () => Promise<{ default: Component<{ meta: ToolMeta }> }>;
 }

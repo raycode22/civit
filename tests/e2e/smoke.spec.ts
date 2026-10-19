@@ -21,13 +21,22 @@ function base64ToBytes(b64: string): Uint8Array {
   return bytes;
 }
 
-/** Wait until the service worker is installed and controlling the page. */
+/**
+ * Wait until the service worker is installed, active, AND has claimed the
+ * current page. `registration.active` alone can be observed while the
+ * activate handler's `clients.claim()` is still pending, which lets the next
+ * navigation bypass the worker and skip runtime caching — the intermittent
+ * cause of offline-reload failures found during Stage 9A verification.
+ */
 async function waitForServiceWorker(page: Page): Promise<void> {
   await page.waitForFunction(
     () => navigator.serviceWorker.getRegistration().then((r) => !!r?.active),
     null,
     { timeout: 30_000 }
   );
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, {
+    timeout: 30_000
+  });
 }
 
 test('landing page renders the catalog', async ({ page }) => {
@@ -145,8 +154,12 @@ test('category filter narrows the catalog (FR-23)', async ({ page }) => {
   await expect(page.locator('#tool-card-base64-image-encoder')).toBeVisible();
 });
 
-test('works-offline filter keeps verified-offline tools (FR-23)', async ({ page }) => {
+test('offline-ready (Docker) filter keeps verified-offline tools (FR-23, D-20)', async ({
+  page
+}) => {
   await page.goto('/');
+  // D-20: the filter label is "Offline-ready (Docker)".
+  await expect(page.locator('label[for="offline-filter"]')).toContainText('Offline-ready (Docker)');
   await page.check('#offline-filter');
   // base64-image-encoder is offline `full`, so it remains under the filter.
   await expect(page.locator('#tool-card-base64-image-encoder')).toBeVisible();
@@ -155,27 +168,32 @@ test('works-offline filter keeps verified-offline tools (FR-23)', async ({ page 
 test('landing page renders all tools grouped by category', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('h1')).toHaveText('Civit');
-  // All 6 tools should appear in the sidebar groups.
-  await expect(page.locator('text=Base64 Image Encoder')).toBeVisible();
-  await expect(page.locator('text=PX to REM')).toBeVisible();
-  await expect(page.locator('text=Word Counter')).toBeVisible();
-  await expect(page.locator('text=Favicon Generator')).toBeVisible();
-  await expect(page.locator('text=Image Clipper')).toBeVisible();
+  // All registered tools should appear in the sidebar groups and card grid;
+  // `.first()` disambiguates the sidebar link from the card title.
+  for (const name of [
+    'Base64 Image Encoder',
+    'PX to REM',
+    'Word Counter',
+    'Favicon Generator',
+    'Image Clipper'
+  ]) {
+    await expect(page.locator(`text=${name}`).first()).toBeVisible();
+  }
 });
 
 test('search filters tools correctly', async ({ page }) => {
   await page.goto('/');
   await page.fill('#tool-search', 'px');
-  await expect(page.locator('text=PX to REM')).toBeVisible();
-  await expect(page.locator('text=Word Counter')).not.toBeVisible();
+  await expect(page.locator('text=PX to REM').first()).toBeVisible();
+  await expect(page.locator('text=Word Counter').first()).not.toBeVisible();
   await page.fill('#tool-search', '');
 });
 
 test('category filter restricts the sidebar', async ({ page }) => {
   await page.goto('/');
   await page.selectOption('#category-filter', 'typography-text');
-  await expect(page.locator('text=PX to REM')).toBeVisible();
-  await expect(page.locator('text=Image Clipper')).not.toBeVisible();
+  await expect(page.locator('text=PX to REM').first()).toBeVisible();
+  await expect(page.locator('text=Image Clipper').first()).not.toBeVisible();
   await page.selectOption('#category-filter', '');
 });
 
@@ -185,7 +203,12 @@ test('tool route loads and renders the tool', async ({ page }) => {
   await expect(page.locator('text=Convert pixels to rem')).toBeVisible();
 });
 
-test('tool 404s for unknown id', async ({ page }) => {
+test('unknown tool id falls back to the SPA shell and shows an error', async ({ page }) => {
+  // Prerendering (FR-43) gives /tools/ a real directory, so the static host
+  // answers unknown ids with 404 while still serving the SPA fallback body;
+  // the client router renders the "Unknown tool" message (D-09: keep the
+  // SPA fallback for unknown routes).
   const response = await page.goto('/tools/not-a-real-tool');
   expect(response?.status()).toBe(404);
+  await expect(page.getByText(/Unknown tool/i)).toBeVisible();
 });

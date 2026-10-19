@@ -40,10 +40,17 @@ describe('tool registry schema (PRD FR-21)', () => {
 
   it('offline values of `full`/`partial` are only used for the one tool with a recorded network-disabled run', () => {
     // PRD FR-30: no offline badge without a recorded verification. Today the
-    // only recorded run is the Playwright "offline reload and conversion"
-    // test for the Base64 encoder. When more tools gain verified runs, extend
-    // this allow-list alongside that evidence.
-    const verified = new Set(['base64-image-encoder']);
+    // recorded runs are the Playwright tests in tests/e2e/offline-tools.spec.ts
+    // (run with `context.setOffline(true)`) covering all five registered tools.
+    // When more tools gain verified runs, extend this allow-list alongside
+    // that evidence.
+    const verified = new Set([
+      'base64-image-encoder',
+      'px-to-rem',
+      'word-counter',
+      'favicon-generator',
+      'image-clipper'
+    ]);
     for (const tool of tools) {
       if (tool.offline !== 'online-only') {
         expect(

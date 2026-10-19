@@ -1,7 +1,7 @@
 # Civit --- Multi-Tool Web App: Project Constitution
 
 **Document type:** System rules / engineering constitution\
-**Status:** Revised for two delivery targets: online Cloudflare Pages + R2, and a separate self-contained Docker/offline build.\
+**Status:** Revised for two delivery targets: online Cloudflare Pages (with Hugging Face for ML model files; R2 deferred), and a separate self-contained Docker/offline build.\
 **Scope:** Toolchain, architecture boundaries, development workflow, and
 verification rules
 
@@ -9,7 +9,7 @@ verification rules
 
 Civit is a multi-purpose collection of browser-based tools for Images & Assets, Audio & Video, and Typography & Text. Tool processing is client-side: user files and outputs remain on the user's device. The product has two distinct delivery targets built from the same application source:
 
-1. **Online web version:** a statically generated SvelteKit application deployed to Cloudflare Pages. Large public runtime assets may be delivered by the already-selected Cloudflare R2 bucket, and approved third-party CDNs may be used where they provide a measured advantage.
+1. **Online web version:** a statically generated SvelteKit application deployed to Cloudflare Pages. Ordinary assets are bundled and served from Pages; ML model files may be loaded from Hugging Face Hub.
 2. **Docker/offline version:** a separate build profile that includes every approved runtime dependency and asset required by released tools. Once the image is built or transferred to a machine, app runtime must not depend on the internet.
 
 The online deployment is the immediate release target. The Docker/offline target has its own asset-localisation register, build output validation, packaging, and network-disabled acceptance tests. A requirement belonging to one target must not silently be applied to the other.
@@ -48,8 +48,8 @@ The app shell and the Base64 image encoder are the architectural reference slice
 ### 3.1 Online profile (primary deployment target)
 
 - Build a static site with SvelteKit `@sveltejs/adapter-static` and publish `build/` to Cloudflare Pages.
-- Use Cloudflare R2 as the large-asset origin. Keep ordinary application assets and npm dependencies bundled by Vite unless a runtime CDN provides a clear performance or maintenance benefit.
-- The online profile may request public libraries/assets from the Pages origin, the configured R2 custom domain, and explicitly approved third-party CDN origins. These origins must be versioned/pinned where possible, have verified licences, and be recorded in the online asset inventory.
+- Keep application assets and npm dependencies bundled by Vite. R2 is deferred; keep every Pages file under the 25 MiB cap (split the ffmpeg core if needed). Do not use r2.dev for production.
+- The online profile bundles fonts, stylesheets and JS libraries. It requests runtime assets only from the Pages origin and, for ML model files, Hugging Face Hub. Any other origin (for example an R2 custom domain) needs an owner decision. Origins must be versioned/pinned where possible, have verified licences, and be recorded in the online asset inventory.
 - The online website is allowed to depend on an internet connection. It must not claim that every tool works offline merely because it is served as a static site or is installable as a PWA.
 - Tool implementations still process user content locally. The permission to load runtime assets online does not permit uploads, remote processing, analytics, or telemetry.
 - Optimise initial loads through route/tool lazy-loading, cacheable content-hashed assets, compression, and deferring heavy assets until their tool is opened.
@@ -70,7 +70,7 @@ PWA installation and service-worker caching may improve repeat visits, but they 
 - Preserve lazy-loading for individual tool code and heavy libraries.
 - Keep tool routes prerendered so direct URLs can be served by static hosting and local Nginx.
 - Show connection state calmly; do not imply that an un-cached remote asset is available offline.
-- Document the distinction between online CDN/R2 delivery and Docker-local assets. Do not introduce separate source trees when a build-time target setting and explicit asset resolver can safely support both profiles.
+- Document the distinction between online Pages/Hugging Face delivery and Docker-local assets. Do not introduce separate source trees when a build-time target setting and explicit asset resolver can safely support both profiles.
 
 ## 4. Toolchain policy
 
@@ -137,9 +137,7 @@ explicitly leaves it with SvelteKit.
 -   Do not commit `node_modules` or vendor build tooling into Git.
     Air-gapped Docker users receive the completed image with
     `docker save` / `docker load`, including its base-image layers.
--   The Docker/offline build must use local paths for fonts, CSS,
-    JavaScript libraries, WASM, and model weights. The online profile is
-    allowed to use configured R2/CDN origins.
+-   Both profiles bundle fonts, CSS and JavaScript libraries. The Docker/offline build must use local paths for WASM and model weights; the online profile may load ML model files from Hugging Face Hub.
 
 ## 7. Quality gates
 
@@ -149,7 +147,7 @@ Before considering a shared code change complete:
 2. Run `vp check`, `vp test run`, and `vp build`; run `svelte-check` explicitly if Vite+ does not cover Svelte diagnostics.
 3. Verify the expected static routes/assets and run Playwright smoke tests where browser dependencies are available.
 4. Record failed, skipped, and blocked checks honestly.
-5. Inspect network behavior for both profiles. Online tests must show only Pages, the configured R2 domain, and explicitly approved CDN origins; neither profile may upload user content or emit telemetry.
+5. Inspect network behavior for both profiles. Online tests must show only Pages and the approved Hugging Face model origin; neither profile may upload user content or emit telemetry.
 6. Run Docker/offline tests for every tool labelled `offline: full`. The required asset set must be present in the image, and runtime must work with external networking disabled.
 7. If multi-threaded WASM is used, verify COOP/COEP and MIME/CORS headers on every deployment path that serves the relevant resources.
 8. Update credits/licences when a dependency or asset is added or upgraded. The Docker localisation register applies to assets that must be included in the offline image.
@@ -239,7 +237,7 @@ targets and a full security model are still undefined.
 - All tool processing happens in the user's browser on the user's device.
 - No user file, selection, recording, or derived output may be uploaded to a server or sent to a third-party API.
 - No telemetry, analytics, or tracking of any kind.
-- The online profile may fetch application code and public assets from the Pages origin, configured R2 custom domain, and explicitly allowlisted CDNs. Such requests must not contain user files or conversion data.
+- The online profile may fetch application code and public assets from the Pages origin and, for ML model files, Hugging Face Hub. Such requests must not contain user files or conversion data.
 - The Docker/offline profile may fetch runtime assets only from the container/local origin; after startup, no external runtime request may be required.
 - Privacy claims must be tested with network inspection. Online tests verify the request-origin allowlist and absence of uploads; Docker tests verify no external runtime requests and no uploads.
 
@@ -276,21 +274,20 @@ Rules:
     `ml-model` | `camera-mic-screen` | `clipboard`), and search
     keywords.
 -   The sidebar is grouped by category; search uses Fuse.js over name,
-    description, and keywords; category and Docker/offline-readiness filters
-    are available. Badge copy must not imply that the online site works offline
+    description, and keywords; a category filter and an "Offline-ready (Docker)" filter are available. Badge copy must not imply that the online site works offline
     before assets are locally available.
 -   Only the three catalogued categories are in scope for this
     increment.
 
 ## 16. Asset delivery, offline guarantees, and secure context
 
-- Use profile-specific asset resolution. Online assets may be bundled into Vite chunks, served from Pages, fetched from the configured R2 custom domain, or loaded from approved/version-pinned CDNs. Docker/offline assets must resolve to files packaged into the image.
-- Keep ordinary npm packages in the lockfile and install them during the build. Prefer bundling dependencies needed for app startup. Use runtime CDN loading only when there is a clear performance, cache-sharing, or bundle-size benefit, and test failure behavior.
-- For large assets, use R2 on the online profile to avoid Cloudflare Pages' 25 MiB per-file limit. Use immutable cache headers for versioned/content-hashed assets and shorter cache lifetimes for mutable entry points.
+- Use profile-specific asset resolution. Online assets are bundled into Vite chunks or served from Pages; ML model files may load from Hugging Face Hub. R2 and any other origin need an owner decision. Docker/offline assets must resolve to files packaged into the image.
+- Keep ordinary npm packages in the lockfile and install them during the build. Prefer bundling dependencies needed for app startup. Do not load fonts, CSS or JavaScript libraries from runtime CDNs.
+- Keep every Pages file under the 25 MiB per-file limit; split the ffmpeg core into pieces that the browser joins before loading. R2 is deferred. Use immutable cache headers for versioned/content-hashed assets and shorter cache lifetimes for mutable entry points.
 - Heavy Docker assets (FFmpeg core, ML models, assets around 50 MB or larger) require explicit approval before acquisition or bundling. Record measured size, checksum, licence, source, and version in the decision register.
 - A tool's `offline` registry value describes its tested readiness in the Docker/offline profile. It does not promise that a fresh browser visit to the online site will run without internet. If optional browser-cache support is implemented, its capability must be labelled separately and backed by actual tests.
-- ML tools require approved model weights in the Docker image before they can be declared fully offline. The online target may load an approved model from R2/CDN, but the user’s input and output remain local.
-- FFmpeg-based tools must use a reviewed FFmpeg WASM build. Record single-thread vs multi-thread selection, licences and memory/file limits. Verify COOP/COEP headers on the relevant Pages/R2 and Docker responses if multi-threading is selected.
+- ML tools require approved model weights in the Docker image before they can be declared fully offline. The online target may load an approved model from Hugging Face Hub, but the user’s input and output remain local.
+- FFmpeg-based tools must use a reviewed FFmpeg WASM build. Use the single-thread core (decision D-14); record licences and memory/file limits. Multi-threading needs a new owner decision and COOP/COEP verification on the Pages and Docker responses.
 - Microphone, screen capture, clipboard and service workers require a secure context or supported local origin. Document HTTPS/localhost access and show a clear error for insecure LAN-IP origins where the relevant API is blocked.
 - Browser codec and format support varies; define fallbacks and explicit error states per tool.
 
@@ -318,3 +315,5 @@ Rules:
 - Heavy assets (approximately 50 MB or more, including FFmpeg cores and ML weights) require an explicit owner decision before acquisition or distribution in either target.
 - Pin versions or immutable URLs where practical, verify checksums for downloadable binary assets, and keep an update/rebuild path documented.
 - Size figures in planning documents are estimates until measured; record the measured size when each asset is added.
+- Docker image size is held to the owner-set budget (about 300 MB or less, an estimate). Exceeding it needs owner approval.
+- Heavy files are fetched at build time with pinned versions and SHA-256 checks and are never committed to Git.

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Component } from 'svelte';
-	import type { Tool } from '$lib/tools/types';
+	import type { Tool, ToolMeta } from '$lib/tools/types';
 
 	let { data }: { data: { tool: Tool } } = $props();
 	// Derived so it stays reactive if load() re-runs (e.g. param change).
@@ -8,7 +8,9 @@
 
 	// [REVISED] Tools are lazy-loaded (PRD FR-24): the registry entry exposes
 	// a dynamic-import loader, fetched only when this route opens.
-	let ToolComponent = $state<Component | null>(null);
+	// [Stage 9A] The component receives the registry metadata as its `meta`
+	// prop; tools built around `export let meta` / `$props()` require it.
+	let ToolComponent = $state<Component<{ meta: ToolMeta }> | null>(null);
 	let loadFailed = $state(false);
 
 	$effect(() => {
@@ -40,7 +42,7 @@
 </nav>
 
 {#if ToolComponent}
-	<ToolComponent />
+	<ToolComponent meta={tool} />
 {:else if loadFailed}
 	<div class="alert alert-error text-sm max-w-3xl" role="alert">
 		This tool could not be loaded. If you are offline, reconnect once so its code can be

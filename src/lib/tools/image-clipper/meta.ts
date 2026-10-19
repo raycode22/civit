@@ -13,7 +13,7 @@ export const meta: ToolMeta = {
   keywords: ['crop', 'clip', 'image', 'cut', 'crop-image', 'clip-image', 'crop-image'],
   category: 'images-assets',
   status: 'new',
-  offline: 'online-only',
+  offline: 'full',
   requires: [],
   icon: Crop
 };

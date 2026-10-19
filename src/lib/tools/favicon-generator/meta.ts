@@ -13,7 +13,7 @@ export const meta: ToolMeta = {
   keywords: ['favicon', 'icon', 'logo', 'canvas', 'ico', 'png', 'favicon-generator'],
   category: 'images-assets',
   status: 'new',
-  offline: 'online-only',
+  offline: 'full',
   requires: [],
   icon: Gamepad2
 };

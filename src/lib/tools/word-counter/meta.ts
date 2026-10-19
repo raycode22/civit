@@ -13,7 +13,7 @@ export const meta: ToolMeta = {
   keywords: ['word', 'count', 'character', 'sentence', 'paragraph', 'text', 'analyze'],
   category: 'typography-text',
   status: 'new',
-  offline: 'online-only',
+  offline: 'full',
   requires: [],
   icon: List
 };

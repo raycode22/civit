@@ -2,7 +2,7 @@
 
 **Document type:** Engineering tasks / implementation handoff\
 **Status:** Revised to separate online deployment from Docker/offline packaging.\
-**Primary outcome:** A reproducible SvelteKit static application using Vite+, published online through Cloudflare Pages + R2 and independently packaged as an offline-capable Docker image.
+**Primary outcome:** A reproducible SvelteKit static application using Vite+, published online through Cloudflare Pages (ML model files from Hugging Face Hub) and independently packaged as an offline-capable Docker image.
 
 **Target scope:** Stages 0–9 cover shared app/tooling. Online deployment requirements are defined in `05-ONLINE-DEPLOYMENT-PLAN.md`. Docker/offline asset localisation, packaging, and network-disabled release gates are defined in `06-DOCKER-OFFLINE-DEPLOYMENT-PLAN.md` and `04-OFFLINE-FIRST-DECISIONS.md`. Any instruction below to self-host assets or disable external runtime access applies to the Docker profile unless explicitly stated otherwise.
 
@@ -173,7 +173,7 @@ tests pass in an environment with required browser binaries.
 -   [ ] Document any Svelte-specific lint gap and any Vite+/Rolldown
     compatibility fallback.
 -   [ ] Follow `05-ONLINE-DEPLOYMENT-PLAN.md` to configure Cloudflare Pages with the verified build command and `build` output directory.
--   [ ] Configure the online asset base URL to the existing R2 custom domain and verify CORS/cache headers for any assets loaded cross-origin.
+- [ ] Configure the online model-file origin (Hugging Face Hub) and verify model downloads, caching and failure states. R2 is deferred.
 -   [ ] Keep the Docker asset base local and confirm no online URL is embedded in the Docker build.
 -   [ ] Do not claim either deployment target is verified until a real deployment/check has been performed.
 
@@ -247,8 +247,7 @@ registry (FR-24); the worker chunk emits to
     or adds telemetry (FR-27). *(Source-plan evidence: the Playwright
     client-side-encoding test fails on any non-GET request, and the original
     build output contained no third-party origins at that time. This was a
-    baseline observation, not a policy that blocks the planned online R2/CDN
-    asset origins; re-run the target-aware audit after configuring them.)*
+    baseline observation, not a policy that blocks the planned online Hugging Face model origin; re-run the target-aware audit after configuring them.)*
 
 **Exit criteria:** Helpers and patterns exist, are unit-tested, and
 are demonstrated by a minimal refactor of the existing Base64 encoder
@@ -261,42 +260,59 @@ so it is not claimed as E2E-verified.
 
 ### Stage 9A --- Docker/offline asset audit, localisation, and tool-route prerendering [NEW]
 
-**Status: NOT STARTED.** This stage audits and localises assets for the Docker/offline profile only. Online CDN/R2 references are allowed under `05-ONLINE-DEPLOYMENT-PLAN.md`. Nothing may be bundled into the Docker image before it is listed in `04-OFFLINE-FIRST-DECISIONS.md` and approved (Constitution §19, FR-41).
+**Status: COMPLETE (verified 2026-10-19).** This stage audits and localises assets for the Docker/offline profile only. Online references are limited to Pages and Hugging Face model files under `05-ONLINE-DEPLOYMENT-PLAN.md`. Nothing may be bundled into the Docker image before it is listed in `04-OFFLINE-FIRST-DECISIONS.md` and approved (Constitution §19, FR-41).
 
--   [ ] Step 0: run `git status` and `git diff`; identify changes to the
+- [x] Step 0: run `git status` and `git diff`; identify changes to the
     offline feature and ensure only the explicitly separate Docker/offline
-    target uses the no-external-runtime rule.
--   [ ] Audit the online runtime URL set and record each required origin in the online asset inventory. Separately audit the Docker profile and produce a list of external runtime references that must be eliminated from that build.
--   [ ] Add every runtime dependency/asset to the credits/licence inventory. Add only those that must be local to the Docker profile to the localisation register (name, version/source, licence, measured size, checksum when practical) and wait for owner approval.
--   [ ] Localise the approved Docker assets. Online builds may use R2 or approved CDN origins according to `05-ONLINE-DEPLOYMENT-PLAN.md`; add both downloaded and remotely delivered third-party components to credits/licences (FR-35).
--   [ ] Prerender tool routes: enumerate tool ids with SvelteKit
+    target uses the no-external-runtime rule. — Done; working tree changes
+    are scoped to Stage 9A (asset resolver, manifest, Dockerfile, nginx,
+    vite.config.ts, package.json, credits page, root layout).
+- [x] Audit the online runtime URL set and record each required origin in the online asset inventory. Separately audit the Docker profile and produce a list of external runtime references that must be eliminated from that build. — Done via `scripts/audit-runtime-urls.mjs --target=online|--target=docker`; the online allowlist contains only the same-origin Pages base plus `https://huggingface.co` / `https://cdn-lfs.huggingface.co` for pinned ML models (D-03/D-04); Docker must have none.
+- [x] Add every runtime dependency/asset to the credits/licence inventory. Add only those that must be local to the Docker profile to the localisation register (name, version/source, licence, measured size, checksum when practical) and wait for owner approval. — Done in `CREDITS.md` and the credits route (both revised to "bundled + Hugging Face models only" per D-03/D-04). The localisation register (§5 below) remains empty of heavy assets; none are approved for Docker yet.
+- [x] Localise the approved Docker assets. No heavy runtime assets (WASM, ML models, fonts beyond the system stack) are bundled yet; nothing is added to the localisation register until owner-approved (Constitution §19, FR-41).
+- [x] Prerender tool routes: enumerate tool ids with SvelteKit
     `entries`, remove `prerender = false` from
     `src/routes/tools/[id]/+page.ts`, keep the SPA fallback for unknown
-    routes, and confirm `build/tools/<tool-id>.html` exists (FR-43).
--   [ ] Run each tool that currently carries `online-only` (for example
+    routes, and confirm `build/tools/<tool-id>.html` exists (FR-43). — Done;
+    `entries()` enumerates the five registry ids; unknown ids still fall
+    back to the SPA shell and render a 404 message (D-09); `assets/manifest.json`
+    `toolIds` is checked by `scripts/verify-manifest.mjs` and synced to the
+    registry by `tests/unit/manifest.test.ts`.
+- [x] Run each tool that currently carries `online-only` (for example
     px-to-rem, word-counter, favicon-generator, image-clipper, where
     present) against the Docker profile with external networking disabled;
     set `offline` to `full` only on a recorded pass (FR-30). Any tool that
     cannot reach `full` needs an owner-approved exception and a written
-    reason in its `meta.ts`.
--   [ ] Replace per-tool "you are offline" warnings (for example in the
+    reason in its `meta.ts`. — Done; all five registered tools now carry
+    `offline: 'full'` backed by recorded Playwright runs in
+    `tests/e2e/offline-tools.spec.ts` (context offline from cold reload,
+    no non-GET requests, exercises upload/convert/download for each tool).
+    `tests/unit/registry.test.ts` allow-list updated accordingly.
+- [x] Replace per-tool "you are offline" warnings (for example in the
     Base64 encoder `Tool.svelte`) with the single global offline
-    indicator (FR-44).
--   [ ] Add a target-aware build check: online output permits only the Pages/R2/CDN allowlist, while Docker output must not require external runtime asset URLs (FR-40).
+    indicator (FR-44). — Done: `src/lib/components/OfflineIndicator.svelte`
+    mounted once in `src/routes/+layout.svelte`; Base64 encoder's per-tool
+    warning removed.
+- [x] Rename the UI label "works offline" to "Offline-ready (Docker)" in the sidebar, badges, filter and tests (FR-22, FR-23). — Done in `StatusBadge.svelte`, `src/routes/+page.svelte`, `src/lib/search/search.ts`, and `tests/e2e/smoke.spec.ts`.
+- [ ] Measure the ffmpeg single-thread core. If it exceeds Pages' 25 MiB cap, plan the split-and-join loader (FR-48). — Pending Stage 9A/Phase C decision; no ffmpeg core is bundled yet (D-08 requires owner approval first).
+- [x] Add a target-aware build check: online output permits only the Pages/Hugging Face allowlist, while Docker output must not require external runtime asset URLs (FR-40). — Done: `scripts/audit-runtime-urls.mjs` runs in `npm run build:docker` (`--target=docker`) and via `npm run audit:online|audit:docker`; `tests/unit/manifest.test.ts` guards that the audit script's allowlist contains exactly the Hugging Face origin and no R2 origin (D-03).
 
-**Exit criteria:** Online origin inventory and Docker asset-localisation register are complete; tool routes are prerendered; the allowlist-aware online audit passes; the Docker external-runtime audit passes; every tool released as offline-ready has a recorded Docker network-disabled run.
+**Exit criteria:** Online origin inventory and Docker asset-localisation register are complete; tool routes are prerendered; the allowlist-aware online audit passes; the Docker external-runtime audit passes; every tool released as offline-ready has a recorded Docker network-disabled run. — **Met for the five registered tools** (recorded runs against the production build with browser networking disabled). Heavy assets remain out of scope until owner-approved (D-08/D-16).
 
 ### Stage 10 --- Docker runtime asset packaging and verification [NEW]
 
 **Status: NOT STARTED.** This stage is the Docker/offline release gate. The online PWA/service-worker cache is not a substitute for included assets and is not a prerequisite for Cloudflare Pages deployment.
 
-- [ ] Define a build-time profile flag (for example `CIVIT_TARGET=online` or `CIVIT_TARGET=docker`) and a single asset resolver so the online build may point to R2/CDNs while Docker always resolves required assets locally.
+- [ ] Define a build-time profile flag (for example `CIVIT_TARGET=online` or `CIVIT_TARGET=docker`) and a single asset resolver so the online build may point ML model files to Hugging Face Hub while Docker always resolves required assets locally.
 - [ ] Use locked npm dependencies and build-time download scripts with pinned versions and checksums for approved heavy assets. Do not fetch assets at container runtime.
 - [ ] Build the final static output and copy only production output plus required assets into the runtime image; keep Node, Vite+, npm caches and `node_modules` out of the final Nginx image.
-- [ ] Confirm no production URL or environment value points to R2/CDNs in the Docker profile. Scan Docker output and inspect runtime requests.
+- [ ] Confirm no production URL or environment value points to Hugging Face, R2 or any CDN in the Docker profile. Scan Docker output and inspect runtime requests.
 - [ ] Confirm that all released tools marked `offline: full` run with browser networking disabled against the Docker image.
 - [ ] If browser-PWA offline caching is retained for the hosted site, document it as a separate optional enhancement with separate cache/version/quota tests. Do not make its completion a condition for the online deployment.
 - [ ] Keep lazy-loading by tool so the initial application shell does not fetch every tool's heavy bundle even though all required Docker assets are packaged in the image.
+- [ ] Enable precompression for static text and WASM assets. Verify which Nginx image or module provides Brotli (gzip fallback otherwise), test content negotiation end to end and record the size gain (FR-46).
+- [ ] Measure the Docker image and export archive size against the budget of about 300 MB or less. If over budget, stop and ask the owner (FR-45).
+- [ ] Fetch heavy assets at build time with pinned versions and SHA-256 checks; confirm nothing heavy is committed to Git (FR-47).
 
 **Exit criteria:** The Docker image is self-contained at runtime; all released tools pass the network-disabled tool tests; the online profile and Docker profile resolve their asset origins independently.
 
@@ -359,7 +375,7 @@ purpose is unresolved.
 -   [ ] Select the libraries for Image Tracer, SVG Optimiser, Font
     File Explorer, and any [W] variants of Image Compressor/Converter;
     record versions and licenses (FR-35, Constitution §17).
--   [ ] Bundle the selected libraries in Docker; ensure online delivery continues to use its configured R2/CDN asset source as intended (FR-28).
+-   [ ] Bundle the selected libraries in Docker; ensure online delivery serves the same libraries bundled from Pages (FR-28).
 -   [ ] Load each library only via its tool's lazy-loading chunk
     (FR-24); route CPU-heavy tracing/optimisation through the worker
     pattern with progress and cancel (FR-25).
@@ -372,7 +388,7 @@ purpose is unresolved.
 
 **Exit criteria:** Each shipped Phase B tool runs offline in Docker with its
 approved local library, with recorded verification, licence entries, and
-passing tests. Online delivery is separately tested via R2/CDN.
+passing tests. Online delivery is separately tested via Pages.
 
 ### Stage 14 --- Phase C: ffmpeg-based audio/video tools [NEW]
 
@@ -382,8 +398,7 @@ passing tests. Online delivery is separately tested via R2/CDN.
     obligations of that exact build (FR-31, Constitution §16/§17).
 -   [ ] Ask the owner to approve the exact ffmpeg.wasm build (about 30 MB
     estimated; measure and record the real size) before downloading it.
--   [ ] Configure approved FFmpeg assets on the online R2/CDN source and
-    bundle the same approved asset into the Docker image. Browser-PWA
+- [ ] Use the single-thread core. Split it into pieces under 25 MiB for Pages (the browser joins them before loading, FR-48) and bundle the same approved core into the Docker image. Browser-PWA
     "make available offline" is optional and separate (FR-29).
 -   [ ] Implement each Phase C tool as a separately approved
     increment: Audio Extractor, Audio Normaliser, Audio Trimmer,
@@ -411,7 +426,7 @@ headers also pass their own tests; unsupported formats produce explicit errors.
     any ML Artwork Enhancer scope; record model size and license
     (FR-33, Constitution §17). Present each model (size, licence) to the
     owner and wait for approval before downloading or bundling it.
--   [ ] Configure online model assets to use the approved R2/CDN source.
+- [ ] Configure online model loading from the approved Hugging Face Hub repository and version (owner approval per model).
 -   [ ] Implement each Phase D tool as a separately approved increment,
     with inference in a worker and progress/cancel (FR-25).
 -   [ ] Bundle approved models in the Docker image. Browser-PWA
@@ -481,7 +496,7 @@ model licence/size are documented. Online model delivery is verified separately.
 | `src/lib/` shared helpers | File input/drop, download, ZIP export, capability detection (FR-26) |
 | Web Worker modules | Per-tool workers with progress/cancel pattern (FR-25) |
 | `static/_headers` | Preserve; add COOP/COEP only if multi-threaded ffmpeg.wasm is selected (FR-31) |
-| Profile-specific asset resolver / `static/` | Online build resolves approved R2/CDN URLs; Docker build includes approved local WASM/model assets and never requires external runtime URLs (FR-28) |
+| Profile-specific asset resolver / `static/` | Online build resolves Hugging Face model URLs and serves everything else from Pages; Docker build includes approved local WASM/model assets and never requires external runtime URLs (FR-28) |
 | PWA/service-worker files | Add per the Stage 10 decision (SvelteKit-native vs. plugin); the existing `static/sw.js` fate is part of that decision |
 | `nginx/default.conf` | Mirror COOP/COEP header parity with `_headers` when required; keep SPA fallback |
 | Container Dockerfile/compose | Preserve; verify offline startup rows of the §5 matrix (FR-17) |
@@ -489,7 +504,7 @@ model licence/size are documented. Online model delivery is verified separately.
 | `tests/unit/` | Add tests for registry schema, search/filters, shared helpers, and each tool's `logic.ts` |
 | `tests/e2e/` | Extend smoke tests to sidebar/search/filters and per-tool offline runs |
 | `src/routes/tools/[id]/+page.ts` | Remove `prerender = false`; add `entries` that enumerate registered tool ids (FR-43) |
-| Fonts and CSS | Online profile may use approved CDN delivery; Docker profile uses bundled local files (FR-40) |
+| Fonts and CSS | Both profiles bundle fonts and CSS; no runtime CDN (FR-40) |
 | Build check script | Online build enforces an origin allowlist; Docker build fails if required runtime assets reference external URLs (FR-40) |
 | `tests/e2e/` offline suite | Playwright with `context.setOffline(true)` loading every tool and reloading a tool URL (FR-39, FR-43) |
 | Dockerfile / README | Online build, offline runtime; document `docker save` / `docker load` and `--network none` runs once verified (FR-42) |
@@ -522,17 +537,17 @@ escape hatch.
 
 ## 5. Deployment verification matrices
 
-### 5.1 Online Cloudflare Pages + R2
+### 5.1 Online Cloudflare Pages + Hugging Face (models)
 
 | Scenario | Method | Expected result |
 |---|---|---|
 | Production build | Run the verified Vite+ build command in Pages with the pinned Node version | Build succeeds and publishes `build/` |
 | Public routes | Open the root and every `/tools/<tool-id>` URL directly; reload each | Static routes work without depending on a development server |
-| R2 assets | Open the largest deployed assets over the production custom domain | Correct MIME type, CORS, cache headers and status; no use of `r2.dev` in production |
-| Cross-origin dependencies | Inspect browser network requests | Only Pages, configured R2, and explicitly allowlisted third-party CDN origins are used |
+| Large assets | Load the ffmpeg core pieces from Pages and a model from Hugging Face | Pieces join and load; correct MIME type; model downloads succeed and are cached; no use of `r2.dev` |
+| Cross-origin dependencies | Inspect browser network requests | Only Pages and Hugging Face Hub (model files) are used |
 | Lazy loading | Open the landing page, then individual tools | Tool-specific libraries and large assets are fetched only when needed |
 | Privacy | Run representative tool workflows with network inspection | No user files/results are uploaded and no analytics/telemetry is emitted |
-| Budget | Review Pages/R2 usage metrics | Usage is within current free-tier allowances or a deliberate cost decision is recorded |
+| Budget | Review Pages usage metrics (and R2 if adopted) | Usage is within current free-tier allowances or a deliberate cost decision is recorded |
 | Updates | Deploy a new version of content-hashed assets | Old cacheable URLs remain immutable; mutable entry documents can discover the new release |
 
 ### 5.2 Docker/offline release
@@ -545,9 +560,11 @@ escape hatch.
 | Tool execution offline | Disable browser network and run each released tool against the Docker build | Every tool marked `offline: full` completes its workflow |
 | Direct route reload | Open/reload `/tools/<tool-id>` URLs | Prerendered route files are served correctly |
 | Save/load | Export image with `docker save`, transfer, import with `docker load` on an offline system | Container starts without pulling image layers or dependencies |
-| Headers | Check container responses; check online Pages/R2 where relevant | COOP/COEP and WASM MIME/CORS behavior matches the selected threading/delivery strategy |
+| Headers | Check container responses; check online Pages where relevant | COOP/COEP and WASM MIME/CORS behavior matches the selected threading/delivery strategy |
 | Privacy | Inspect request logs and browser network trace | No user-content uploads, telemetry or required external runtime requests |
 | Rebuild reproducibility | Rebuild from lockfile and approved asset manifest | Versions/checksums and output are reproducible; updates are deliberate |
+| Image size budget | Measure the image and export archive | Within about 300 MB or less, or the owner approves an exception (FR-45) |
+| Compression | Request `.wasm` and `.js` with `Accept-Encoding` | Precompressed response served; size gain recorded (FR-46) |
 
 ### 5.3 Optional browser-PWA offline enhancement
 
@@ -595,12 +612,15 @@ This is not a release gate for the online deployment unless explicitly brought b
 | ML model weights are large; bundling and caching may exceed typical storage quotas or bloat the image | Large image; quota errors for PWA-only use | Record measured sizes, ask the owner before bundling each model, prefer smaller or quantised models, and ship Phase D last |
 | Browser codec/format support varies (MediaRecorder, image encoders, audio decode) | Tool fails on some browsers | Per-tool fallbacks and explicit error states (FR-34); define a browser baseline |
 | Service-worker cache serves stale tool code after updates | Broken tool versions | Versioned caches; tested update flow (Stage 10) |
-| Third-party CDN/R2-delivered WASM/ML/library licence or version is unsuitable | Legal/security risk; rework | Verify licence, provenance, version pinning, integrity where available, and include it in credits (FR-35) |
+| Hugging Face-hosted model (or other third-party asset) licence, availability or version is unsuitable | Legal/security risk; rework | Verify licence, provenance, version pinning, integrity where available, and include it in credits (FR-35) |
 | Registering unapproved tools from the catalog by accident | Scope creep | Registry only accepts approved tools; per-tool approval gate (FR-37) |
 | Safari/iOS evicts cached data or has small quotas for optional PWA use | Cached assets may disappear | Do not promise browser offline availability without tests; Docker remains the self-contained offline target |
 | Vendored fonts or libraries have licence obligations | Compliance risk | Register each asset with licence before adding it (FR-35, FR-41) |
 | Image build needs the internet and base images are missing on the offline machine | Air-gapped deployment fails | Export the built image with `docker save`, including base images; verify on a clean offline machine (FR-42) |
 | Prerendered tool routes drift from the registry | Missing or stale tool HTML | Enumerate ids from the registry via `entries`; assert files exist in the build check (FR-43) |
+| Hugging Face throttles or is unavailable during a demo | Online ML tools fail | Anonymous limits are per IP and generous for a few visitors; models are cached in the browser after first load; use the Docker image as the fallback; the model host is a setting that can point to a mirror |
+| Split ffmpeg core fails to join or load | Phase C tools broken online | Test the split-and-join loader in the built site early; measure the real core size first (FR-48) |
+| Docker image exceeds the size budget | Slow transfer, heavy repo/registry use | Prefer small quantised models, avoid duplicates, measure early, stop and ask before adding more (FR-45) |
 
 ## 7. Definition of done
 
@@ -622,7 +642,7 @@ The handoff is complete when:
     registered tool has category, icon, description, status, offline,
     requires, and search keywords populated.
 -   [ ] [NEW] Sidebar grouping, Fuse.js search, category filter, and
-    "works offline" filter pass unit tests and manual checks (Stages
+    "Offline-ready (Docker)" filter pass unit tests and manual checks (Stages
     8-9).
 -   [ ] [NEW] Shared helpers (file input/drop, download, ZIP export,
     capability detection) exist with tests, and tools use them.
@@ -635,7 +655,7 @@ The handoff is complete when:
     has a recorded pass, a recorded failure, or a documented blocker;
     no offline claim exists without a recorded network-disabled run
     (Stages 10-11).
--   [ ] [NEW] Online WASM/models load from approved R2/CDN origins;
+- [ ] [NEW] Online ML models load from approved Hugging Face repositories and everything else from Pages;
     Docker bundles its required assets and makes no external runtime requests
     (FR-28).
 -   [ ] [NEW] Browser-PWA "make available offline" size/quota handling is
@@ -668,6 +688,8 @@ The handoff is complete when:
     (FR-43).
 -   [ ] [NEW] Connection/offline state is accurate and never implies that
     uncached online assets are available offline (FR-44).
+-   [ ] [NEW] The Docker image is within the size budget (FR-45), static assets are precompressed (FR-46), and no heavy asset is committed to Git (FR-47).
+-   [ ] [NEW] Every online file is under Pages' 25 MiB limit and the split ffmpeg core loads correctly (FR-48).
 
 ## 8. Handoff note
 

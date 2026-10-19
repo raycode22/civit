@@ -6,12 +6,19 @@
 
   const { meta } = $props();
 
-  let file = $state<File | null>(null);
+  // [Stage 9A] `bind:files` yields a FileList (Svelte 5 binds `input.files`
+  // directly); the single selected file is derived from it. Binding a File
+  // here previously threw "Overload resolution failed" in createObjectURL
+  // and left the preview/clip flow without a source URL.
+  let fileList = $state<FileList | null>(null);
+  const file = $derived(fileList && fileList.length > 0 ? fileList[0] : null);
   let imageUrl = $state<string | null>(null);
   let result = $state<{ dataUri: string; size: number } | null>(null);
   let error = $state<string | null>(null);
   let downloading = $state(false);
   let copied = $state(false);
+  // Hidden file input; referenced from the drop-zone click/keyboard handlers.
+  let input = $state<HTMLInputElement | null>(null);
 
   $effect(() => {
     if (file) {
@@ -23,12 +30,13 @@
 
   async function clip(): Promise<void> {
     error = null;
-    if (!imageUrl || !file) return;
+    const src = imageUrl;
+    if (!src || !file) return;
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
       el.onload = () => resolve(el);
       el.onerror = () => reject(new Error('Could not decode the image.'));
-      el.src = imageUrl;
+      el.src = src;
     });
     const rect = computeClipRect(img, 768, 512);
     try {
@@ -68,12 +76,13 @@
           role="button"
           tabindex="0"
           onkeypress={(e) => {
-            if (e.key === 'Enter') input.click();
+            if (e.key === 'Enter') input?.click();
           }}
-          onclick={() => input.click()}
+          onclick={() => input?.click()}
         >
           <input
-            bind:files={file}
+            bind:files={fileList}
+            bind:this={input}
             id="input"
             type="file"
             accept="image/*"
@@ -86,8 +95,8 @@
       {:else}
         <div class="flex flex-col items-center gap-3">
           <img
-            {src}
-            alt="Source image"
+            src={imageUrl}
+            alt="Uploaded source preview"
             class="max-h-48 rounded border"
             width={768}
             height={512}

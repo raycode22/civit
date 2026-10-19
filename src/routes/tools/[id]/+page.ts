@@ -1,11 +1,14 @@
 import { error } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
-import { getTool } from '$lib/tools/registry';
+import { getTool, tools } from '$lib/tools/registry';
 
-// The dynamic route cannot be crawled during prerendering (the catalog links
-// are rendered client-side because ssr=false), so it is served through the
-// SPA fallback and resolved in the browser instead.
-export const prerender = false;
+// [Stage 9A, FR-43 / D-09] Tool routes are prerendered. Each registered tool
+// id is enumerated through SvelteKit's `entries`, so the static build emits
+// `build/tools/<tool-id>.html` for every tool in the registry. Unknown ids
+// still resolve client-side through the SPA fallback and show a 404 message.
+export function entries(): { id: string }[] {
+  return tools.map((tool) => ({ id: tool.id }));
+}
 
 export const load: PageLoad = ({ params }) => {
   const tool = getTool(params.id);

@@ -1,7 +1,7 @@
 # Civit --- Multi-Tool Web App: Product Requirements Document
 
 **Document type:** Product requirements\
-**Status:** Revised for online Cloudflare Pages + R2 and a separate Docker/offline delivery target.\
+**Status:** Revised for online Cloudflare Pages (with Hugging Face for ML model files) and a separate Docker/offline delivery target; decisions of 2026-10-19 applied.\
 **Product name:** Civit
 
 ## 1. Product overview
@@ -10,7 +10,7 @@ Civit is a multi-purpose browser application containing tools for Images & Asset
 
 Civit has two independent delivery profiles built from the same application source:
 
-- **Online web version (immediate deployment target):** a static SvelteKit build hosted on Cloudflare Pages. Ordinary npm dependencies are installed and bundled at build time. Large runtime files are served from the existing Cloudflare R2 setup; approved CDNs may be used where useful. The online deployment is expected to have internet access.
+- **Online web version (immediate deployment target):** a static SvelteKit build hosted on Cloudflare Pages. Ordinary npm dependencies are installed and bundled at build time. Fonts, CSS and libraries are bundled; ML model files load from Hugging Face Hub; every Pages file stays under the 25 MiB cap. The online deployment is expected to have internet access.
 - **Docker/offline version (separate deployment target):** a distinct build profile containing all approved runtime libraries and assets required by shipped tools. Once the image is built/imported and started, the app and every released tool must work without external network access.
 
 Both profiles process user content locally. No user file, selection, recording, or generated output is uploaded; no analytics or telemetry is emitted. The online profile may request approved public code/assets, which is different from sending user content to those services.
@@ -27,8 +27,8 @@ Both profiles process user content locally. No user file, selection, recording, 
 -   Include a Base64 image encoder as the initial reference tool slice
     that proves the multi-tool architecture.
 -   Publish the online static application through Cloudflare Pages using SvelteKit's static adapter and `build/` output.
--   Use the existing Cloudflare R2 bucket as the online origin for large runtime assets that do not fit Pages' per-file limit.
--   Permit approved runtime CDN/R2 asset delivery in the online profile while keeping all user-file processing client-side.
+- Keep online files under Pages' per-file limit (split the ffmpeg core if needed) and load ML model files from Hugging Face Hub. R2 is deferred.
+- Permit Hugging Face Hub as the only third-party runtime origin (ML model files) in the online profile while keeping all user-file processing client-side.
 -   Maintain a separate Docker build profile that bundles all approved required runtime assets and works with external networking disabled.
 -   Provide unit and end-to-end smoke-test foundations for shared behavior and separate acceptance checks for the online and Docker profiles.
 -   Use Vite+ as the unified CLI for development, build, testing, linting, formatting, and checking, subject to version validation.
@@ -38,7 +38,7 @@ Both profiles process user content locally. No user file, selection, recording, 
     §12.
 -   [NEW] Provide discovery infrastructure: a sidebar grouped by
     category, Fuse.js search over name/description/keywords, a
-    category filter, a Docker/offline-capability filter, and status and
+    category filter, an "Offline-ready (Docker)" filter, and status and
     capability badges. Do not imply that the online deployment works
     offline simply because a tool is packaged for Docker.
 -   [NEW] Provide shared tool infrastructure: per-tool lazy loading of
@@ -48,7 +48,7 @@ Both profiles process user content locally. No user file, selection, recording, 
     detection with clear error messages.
 -   [NEW] Process everything locally in the browser: no uploads and no
     telemetry (see Constitution §13).
--   [REVISED] Deliver assets by profile: the online profile may load approved large WASM/model assets from R2 or an approved CDN; the Docker/offline profile packages the exact required files into the image. Browser-PWA offline asset downloads are optional and must not block the online release. Heavy model/FFmpeg assets require explicit owner approval before inclusion in the Docker package.
+-   [REVISED] Deliver assets by profile: the online profile loads ML model files from Hugging Face Hub and serves everything else from Pages; the Docker/offline profile packages the exact required files into the image. Browser-PWA offline asset downloads are optional and must not block the online release. Heavy model/FFmpeg assets require explicit owner approval before inclusion in the Docker package.
 -   [NEW] Deliver tools in phases A (lightweight), B (library-based
     image/font), C (ffmpeg-based audio/video), and D (ML), with every
     tool remaining a separately approved increment.
@@ -72,9 +72,7 @@ Both profiles process user content locally. No user file, selection, recording, 
 -   Analytics and telemetry [NEW] (analytics remains out of scope as
     before; telemetry is prohibited outright by Constitution §13).
 -   Implementing additional tool vertical slices.
--   Server-side APIs, databases, authentication, accounts, backend compute,
-    and server-side file processing. Cloudflare Pages and the already-selected
-    R2 bucket are approved only for static application and public asset delivery.
+-   Server-side APIs, databases, authentication, accounts, backend compute, and server-side file processing. Cloudflare Pages is approved only for static application delivery; an R2 bucket exists but is deferred.
 -   Analytics, telemetry, monetization, and product-level privacy
     policy.
 -   Specific accessibility or performance budgets not stated in the
@@ -161,7 +159,7 @@ research:
 | FR-13 | The online web app may provide PWA metadata/installability. Installability does not imply full offline capability. | Manifest and installability behavior are checked in a supported browser; user-facing claims accurately state actual capability. |
 | FR-14 | If a service worker is used, its online caching/update behavior must be documented and recoverable. It is not the source of the Docker offline guarantee. | Service-worker updates do not corrupt the online site; cache failures recover without breaking normal online use. |
 | FR-15 | The Docker/offline profile shall package the app shell, prerendered routes, required tool code and all required runtime assets. Browser caching is optional and separate. | Docker asset inventory and network-disabled tests show every released tool works from the image. |
-| FR-16 | The online profile may load application assets from Pages, the configured R2 custom domain and approved CDNs. The Docker profile must not require external runtime asset requests. | Online network trace matches its origin allowlist; Docker network-disabled tests make no external runtime requests. |
+| FR-16 | The online profile may load application assets from Pages and, for ML model files, Hugging Face Hub. The Docker profile must not require external runtime asset requests. | Online network trace matches its origin allowlist; Docker network-disabled tests make no external runtime requests. |
 | FR-17 | Provide a reproducible Docker-based local deployment. | Documented Docker build/start succeeds; final image contains all required runtime files. |
 | FR-18 | Report connection state without misleading users about offline availability. | UI shows connection state and does not mark uncached/remote-dependent tools as ready offline. |
 | FR-19 | Document persistence for local data where applicable. | Reload and restart tests match the defined persistence behavior. |
@@ -172,29 +170,33 @@ research:
 | ID | Requirement | Acceptance evidence |
 |---|---|---|
 | FR-21 | Every registry entry shall carry: `category` (`images-assets` \| `audio-video` \| `typography-text`), `icon`, `description`, `status` (`new` \| `beta` \| `stable`), `offline` (`full` \| `partial` \| `online-only`), `requires` (subset of `wasm` \| `ml-model` \| `camera-mic-screen` \| `clipboard`), and search keywords. | Registry type check passes; every catalogued tool in §12 has all fields populated. |
-| FR-22 | The tool listing shall be grouped by category in a sidebar, with status and offline badges shown per tool. | Visual/manual check of the built site; badge values come only from registry fields. |
-| FR-23 | Search shall use Fuse.js over tool name, description, and keywords, and shall compose with a category filter and a "works offline" filter. | Unit tests for search/filter logic; manual check in the built site. |
+| FR-22 | The tool listing shall be grouped by category in a sidebar, with status and "Offline-ready (Docker)" badges shown per tool. | Visual/manual check of the built site; badge values come only from registry fields. |
+| FR-23 | Search shall use Fuse.js over tool name, description, and keywords, and shall compose with a category filter and an "Offline-ready (Docker)" filter. | Unit tests for search/filter logic; manual check in the built site. |
 | FR-24 | Each tool and its heavy libraries shall be lazy-loaded so that opening one tool does not load another tool's code. | Network panel inspection: tool chunk loads on navigation to that tool only. |
 | FR-25 | CPU-heavy processing shall run in a Web Worker and expose progress reporting and cancellation. | At least one worker-based tool demonstrates progress updates and a working cancel action. |
 | FR-26 | Shared helpers shall cover: file input/drop, download, ZIP export for multi-file output, and browser-capability detection that fails with clear error messages when a required API is missing. | Unit tests for helpers; an error-state screenshot or manual check for a missing capability. |
 | FR-27 | All processing shall be local: no user file, selection, recording, or derived output may be uploaded, and no telemetry may be emitted. Asset requests to configured delivery origins are allowed in the online profile. | Network inspection confirms no uploads/telemetry; online requests match the origin allowlist and Docker runtime makes no external requests. |
-| FR-28 | WASM/model delivery is profile-specific: online assets may come from R2 or approved CDN origins; required Docker assets must be included in the image and served locally. | Online delivery URLs, CORS and caching are verified; Docker build audit confirms required assets are local. |
+| FR-28 | WASM/model delivery is profile-specific: online ML model files may come from Hugging Face Hub and everything else from Pages; required Docker assets must be included in the image and served locally. | Online delivery URLs, caching and failure states are verified; Docker build audit confirms required assets are local. |
 | FR-29 | Heavy assets required by released Docker tools shall be bundled in the image. A browser-PWA "make available offline" download is optional, separate work; if provided it must show size and handle quota failure. | Docker image contains approved required assets. If browser offline downloads are implemented, size/quota/error paths are tested. |
 | FR-30 | The registry `offline` value describes verified Docker/offline readiness, not guaranteed no-network operation on the hosted website. Every released Docker tool is expected to be `full`; exceptions require owner approval. | Each offline claim is backed by a test of the Docker profile with external networking disabled and recorded in `04-OFFLINE-FIRST-DECISIONS.md`. |
-| FR-31 | Record the exact ffmpeg.wasm build, threading mode, licence and memory/file limits. Use R2/CDN for the online profile when appropriate and bundle the selected core into Docker. If multi-threading is used, verify COOP/COEP headers on Pages and on the container response. | Delivery and header checks pass on each applicable profile; decision and license are recorded. |
+| FR-31 | Record the exact ffmpeg.wasm build, threading mode, licence and memory/file limits. Use the single-thread core (D-14), split into pieces under 25 MiB for Pages, and bundle it into Docker. Multi-threading needs a new owner decision and COOP/COEP verification on Pages and on the container response. | Delivery and header checks pass on each applicable profile; decision and license are recorded. |
 | FR-32 | The app shall document supported access patterns for secure-context features (microphone, screen capture, clipboard, service worker require HTTPS or localhost), including the known breakage when a Docker/Podman deployment is reached over plain HTTP on a LAN IP. | Documentation plus a manual check that an insecure context shows a clear error instead of silent failure. |
-| FR-33 | ML tools shall record model size and licence. Obtain owner approval before including each model in the Docker image. The online profile may retrieve the approved weights from R2/CDN; Docker must include them locally before the tool is released as `full` offline. | Model provenance/size/licence is recorded; online retrieval passes; Docker offline test passes with the model in the image. |
+| FR-33 | ML tools shall record model size and licence. Obtain owner approval before including each model in the Docker image. The online profile may retrieve the approved weights from Hugging Face Hub; Docker must include them locally before the tool is released as `full` offline. | Model provenance/size/licence is recorded; online retrieval passes; Docker offline test passes with the model in the image. |
 | FR-34 | Where browser codec/format support varies, each affected tool shall define fallbacks and explicit error states. | Documented format matrix per tool; error state shown for an unsupported input. |
 | FR-35 | The app shall publish a credits/licenses listing covering third-party WASM builds, ML models, JS libraries, and fonts. | Page or section exists in the built site and lists each dependency with its license. |
 | FR-36 | Every tool shall follow the tool contract: `src/lib/tools/<tool-id>/` containing `Tool.svelte`, `logic.ts`, and `meta.ts`, with logic unit-tested where practical. | Directory structure matches; unit tests exist for `logic.ts` of each shipped tool. |
 | FR-37 | Every catalogued tool shall be assigned to a phase (A, B, C, or D) and remain a separately approved increment; nothing in this PRD auto-approves any individual tool. | Phase assignment recorded in the §12 catalog; approvals tracked per tool. |
 | FR-38 | User-facing copy, tool names, and documentation shall use British English spelling (e.g. "Normaliser", "Optimiser"). | Review pass over UI strings and docs; catalog names follow the convention. |
 | FR-39 [NEW] | The Docker/offline profile shall run the app and every released tool with external network access disabled. This requirement does not apply to a fresh browser session on the online Pages site. | Playwright tool tests pass against the Docker image with external access blocked; container starts and serves with `--network none`. |
-| FR-40 [NEW] | The external-asset audit shall be target-aware. Online output may reference only Pages, the configured R2 custom domain and explicitly approved CDN origins; Docker output must not require external runtime asset URLs. | Online origin-allowlist audit and Docker no-external-runtime-asset audit both pass. |
+| FR-40 [NEW] | The external-asset audit shall be target-aware. Online output may reference only Pages and the approved Hugging Face model origin; Docker output must not require external runtime asset URLs. | Online origin-allowlist audit and Docker no-external-runtime-asset audit both pass. |
 | FR-41 [NEW] | Every dependency/asset requires a documented source, version and licence. Assets that must be packaged for Docker require an entry (including size and checksum where applicable) and owner approval in the localisation register. Heavy assets require explicit per-asset approval. | Credits/licence audit passes; `04-OFFLINE-FIRST-DECISIONS.md` records approval for each Docker-localised asset. |
 | FR-42 [NEW] | The container image shall be built online and run offline. Air-gapped machines receive the built image via `docker save` / `docker load`; `node_modules` is not vendored. | Documented, verified build/save/load procedure; offline container run passes. |
 | FR-43 [NEW] | Tool routes shall be prerendered so each registered tool has its own HTML file in `build/tools/` and supports direct URL navigation/reload on Pages and in Docker. | `build/tools/<tool-id>.html` exists for every registered tool; direct reload is tested on both profiles. |
 | FR-44 [NEW] | Show one global connection-state indicator. Do not present offline as an error; do not claim a tool is locally available unless its assets are present and its offline path is verified. | Online/offline UI tests verify the status is accurate and no per-tool alarm wording is used. |
+| FR-45 [NEW] | The Docker image shall stay within an owner-set size budget of about 300 MB or less (an estimate, to be confirmed by measurement). If the measured image exceeds the budget, work stops for an owner decision on smaller/quantised models or a slim variant. | Image size and export archive size are measured and recorded; budget met or exception approved. |
+| FR-46 [NEW] | Static text and WASM assets shall be served precompressed (Brotli where the web server supports it, gzip otherwise) on both profiles where the host allows. | Response headers show the compressed encoding; size gain recorded. |
+| FR-47 [NEW] | Heavy assets (WASM cores, model weights) shall be fetched at build time with pinned versions and SHA-256 checks and shall not be committed to Git. | Repository size stays small; the build fails on a missing file or a hash mismatch. |
+| FR-48 [NEW] | On the online profile, any file larger than Pages' 25 MiB per-file limit (the ffmpeg core, if it exceeds it) shall be split into pieces that the browser joins before loading. | Measured core size recorded; split and join tested in the built site; all Pages files under the cap. |
 
 ## 5. Non-functional requirements
 
@@ -266,12 +268,11 @@ browser support, or availability targets.
     delegating to it) and `build` as the output directory.
 11. [NEW] Every registry entry validates against the FR-21 field set,
     and every tool in the §12 catalog has all fields populated.
-12. [NEW] The sidebar groups tools by category; the category and "works
-    offline" filters and Fuse.js search compose correctly (FR-22,
+12. [NEW] The sidebar groups tools by category; the category and "Offline-ready (Docker)" filters and Fuse.js search compose correctly (FR-22,
     FR-23).
 13. [NEW] Network inspection confirms per-tool lazy loading (FR-24), no
     upload/telemetry (FR-27), and that online asset requests match the
-    documented Pages/R2/CDN allowlist.
+    documented Pages/Hugging Face allowlist.
 14. [NEW] At least one worker-based tool demonstrates progress and cancel
     (FR-25); shared helpers produce clear errors for missing capabilities
     (FR-26).
@@ -295,6 +296,8 @@ browser support, or availability targets.
     internet (FR-20, FR-42).
 23. [NEW] Every tool has a prerendered HTML file and supports direct reload
     on Pages and Docker; connection-state UI is accurate (FR-43, FR-44).
+24. [NEW] The Docker image is within the size budget (FR-45), compression is verified (FR-46), and no heavy asset is committed to Git (FR-47).
+25. [NEW] Every online file is under Pages' 25 MiB limit and a split ffmpeg core loads correctly (FR-48).
 
 ## 8. Risks and open questions
 
@@ -370,6 +373,8 @@ browser support, or availability targets.
 -   [NEW] **Safari/iOS storage:** browser cache eviction and small quotas
     affect PWA-only use; Docker use is unaffected because assets are
     served from the container.
+-   [NEW] **Hugging Face model approvals:** each online model repository and version (licence, size) needs owner approval; Hugging Face is a free third-party service with no uptime promise, so the Docker image is the demo fallback.
+-   [NEW] **ffmpeg core size:** measure the real single-thread core; split it only if it exceeds Pages' 25 MiB cap.
 
 ## 9. Docker/offline acceptance criteria
 
@@ -380,7 +385,7 @@ browser support, or availability targets.
 5. Confirm no user file, selection, recording, or result is uploaded and no telemetry is emitted.
 6. Verify that the image archive can be transferred to a clean offline machine, loaded with `docker load`, and started without pulling any image or dependency.
 7. Verify direct reload of each prerendered `/tools/<tool-id>` route.
-8. If multi-threaded WASM is used, verify COOP/COEP headers in the container and on the Pages/R2 delivery path as applicable.
+8. If multi-threaded WASM is used, verify COOP/COEP headers in the container and on the Pages delivery path as applicable.
 9. Verify supported secure-context behavior for microphone, screen capture, clipboard, and service-worker features.
 10. Treat browser-PWA offline caching as a separate optional capability; if claimed, test it independently with the actual approved asset configuration.
 
@@ -395,16 +400,15 @@ browser support, or availability targets.
 -   Fuse.js
 -   lucide-svelte
 -   Playwright for E2E tests
--   [NEW] ffmpeg.wasm (approved R2/CDN source for online delivery if chosen;
+-   [NEW] ffmpeg.wasm (single-thread core, split into pieces under 25 MiB for Pages;
     exact build, threading mode and licence obligations must be verified)
--   [NEW] ML runtime/model weights for Phase D tools (R2/CDN online delivery;
+-   [NEW] ML runtime/model weights for Phase D tools (Hugging Face Hub online delivery;
     Docker-localised weights are separately approved and size-recorded)
 -   [NEW] A Web Worker harness pattern for CPU-heavy tools (no
     specific library assumed)
 -   [NEW] A browser-capability detection helper (no specific library
     assumed)
--   [NEW] Fonts and runtime libraries for the online build may be bundled
-    or loaded from approved CDN origins. Any files that must be localised
+-   [NEW] Fonts and runtime libraries are bundled in both builds (no runtime CDNs). Any files that must be localised
     for Docker are listed in the offline register and approved by the owner
     (FR-41).
 
@@ -441,11 +445,11 @@ All "Offline (target)" values below describe the Docker/offline profile and are 
 | 10 | Image Masker | [L] | A | full | new | Apply a mask/redaction region to an image. |
 | 11 | Image Splitter | [L] | A | full | new | Split an image into a grid of tiles (multi-file ZIP export). |
 | 12 | Image Stitcher | [L] | A | full | new | Combine multiple images into one (horizontally/vertically/grid). |
-| 13 | Image Tracer | [W] | B | full (after library download) | new | Vectorise a raster image to SVG. |
+| 13 | Image Tracer | [W] | B | full (library bundled in Docker) | new | Vectorise a raster image to SVG. |
 | 14 | Metadata Stripper | [L] | A | full | new | Remove EXIF/metadata from images. |
 | 15 | Paste Image | [D] | A (provisional) | full | new | Accept an image from the clipboard. Secure context required. |
 | 16 | Placeholder Generator | [L] | A | full | new | Generate placeholder images (size/format-driven). |
-| 17 | SVG Optimiser | [W] | B | full (after library download) | new | Optimise/minify SVG markup. |
+| 17 | SVG Optimiser | [W] | B | full (library bundled in Docker) | new | Optimise/minify SVG markup. |
 
 ### Audio & Video (16)
 
@@ -453,18 +457,18 @@ All "Offline (target)" values below describe the Docker/offline profile and are 
 |---|---|---|---|---|---|---|
 | 1 | Audio Atlas | TBD | A (provisional) | full | new | Purpose unconfirmed in source. Proposed equivalent: a per-media-type audio format reference page. Needs decision. |
 | 2 | Video Atlas | TBD | A (provisional) | full | new | Purpose unconfirmed in source. Proposed equivalent: a per-media-type video format reference page. Needs decision. |
-| 3 | Audio Extractor | [W] | C | full (after library download) | new | Extract the audio track from a video file. |
-| 4 | Audio Normaliser | [W] | C | full (after library download) | new | Normalise audio loudness. |
-| 5 | Audio Trimmer | [L]/[W] | C | full (after library download) | new | Cut an audio clip to a time range. |
+| 3 | Audio Extractor | [W] | C | full (library bundled in Docker) | new | Extract the audio track from a video file. |
+| 4 | Audio Normaliser | [W] | C | full (library bundled in Docker) | new | Normalise audio loudness. |
+| 5 | Audio Trimmer | [L]/[W] | C | full (library bundled in Docker) | new | Cut an audio clip to a time range. |
 | 6 | Auto Subtitle | [M] | D | full (model bundled; owner approval needed) | new | Generate subtitles from speech via speech-to-text. |
-| 7 | Frame Extractor | [L]/[W] | C | full (after library download) | new | Extract still frames from a video. |
+| 7 | Frame Extractor | [L]/[W] | C | full (library bundled in Docker) | new | Extract still frames from a video. |
 | 8 | Screen Recorder | [D] | A (provisional) | full | new | Record the screen (and optionally audio) via getDisplayMedia. Secure context required. |
 | 9 | Subtitle Converter | [L] | A | full | new | Convert subtitle files between formats (e.g. SRT/VTT). |
 | 10 | Subtitle Studio | [L] | A | full | new | Edit/create subtitle files with timing. |
 | 11 | Timecode Calculator | [L] | A | full | new | Compute and convert timecodes/frame rates. |
-| 12 | Video Muter | [W] | C | full (after library download) | new | Remove or mute a video's audio track. |
-| 13 | Video to GIF | [W] | C | full (after library download) | new | Convert a video segment into an animated GIF. |
-| 14 | Video Trimmer | [W] | C | full (after library download) | new | Cut a video clip to a time range. |
+| 12 | Video Muter | [W] | C | full (library bundled in Docker) | new | Remove or mute a video's audio track. |
+| 13 | Video to GIF | [W] | C | full (library bundled in Docker) | new | Convert a video segment into an animated GIF. |
+| 14 | Video Trimmer | [W] | C | full (library bundled in Docker) | new | Cut a video clip to a time range. |
 | 15 | Voice Recorder | [D] | A (provisional) | full | new | Record audio from the microphone. Secure context required. |
 | 16 | Waveform Generator | [L]/[W] | A (Web Audio path) or C (library path) | full | new | Render a waveform image from audio. |
 
@@ -473,7 +477,7 @@ All "Offline (target)" values below describe the Docker/offline profile and are 
 | # | Tool | Tag | Phase | Offline (target) | Status | Notes (inferred purpose --- assumption) |
 |---|---|---|---|---|---|---|
 | 1 | Document Converter | TBD | A (provisional) | full | new | Convert between text-based document formats. Formats undefined; tag/phase provisional. |
-| 2 | Font File Explorer | [L]/[W] | B | full (after library download) | new | Inspect the metadata/tables of a font file. |
+| 2 | Font File Explorer | [L]/[W] | B | full (library bundled in Docker) | new | Inspect the metadata/tables of a font file. |
 | 3 | Glyph Browser | [L] | A | full | new | Browse a font's glyphs/characters. |
 | 4 | Large Type | [L] | A | full | new | Display text very large (e.g. signage/visibility aid). |
 | 5 | Line Height Calculator | [L] | A | full | new | Compute line-height values from font size/ratio. |

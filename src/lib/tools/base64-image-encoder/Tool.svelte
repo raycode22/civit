@@ -1,9 +1,12 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { Copy, Check, WifiOff } from '@lucide/svelte';
+	import { onDestroy } from 'svelte';
+	import { Copy, Check } from '@lucide/svelte';
 	import FileDropZone from '$lib/components/FileDropZone.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
-	import { meta } from './meta';
+	import type { ToolMeta } from '$lib/tools/types';
+	// [Stage 9A] The route passes the registry metadata as a prop, like every
+	// other tool; the component no longer imports its own meta statically.
+	let { meta }: { meta: ToolMeta } = $props();
 	import {
 		validateImage,
 		encodeBytes,
@@ -19,7 +22,6 @@
 	let result = $state<EncodeResult | null>(null);
 	let fileName = $state('');
 	let copied = $state(false);
-	let online = $state(true);
 	// [NEW] Worker-backed encoding state (PRD FR-25).
 	let encoding = $state(false);
 	let progress = $state(0);
@@ -117,17 +119,10 @@
 		}
 	}
 
-	// Offline indicator (FR-18).
-	const setOnline = () => (online = true);
-	const setOffline = () => (online = false);
-	onMount(() => {
-		online = navigator.onLine;
-		window.addEventListener('online', setOnline);
-		window.addEventListener('offline', setOffline);
-	});
+	// [Stage 9A, FR-44] The offline indicator moved to the global layout
+	// component (src/lib/components/OfflineIndicator.svelte); only the worker
+	// cleanup remains here.
 	onDestroy(() => {
-		window.removeEventListener('online', setOnline);
-		window.removeEventListener('offline', setOffline);
 		taskClient?.terminate();
 	});
 
@@ -143,17 +138,6 @@
 		<StatusBadge status={meta.status} offline={meta.offline} />
 	</div>
 	<p class="opacity-80 -mt-4">{meta.description}</p>
-
-	{#if !online}
-		<div
-			class="alert alert-warning flex items-center gap-2 text-sm"
-			role="status"
-			id="offline-indicator"
-		>
-			<WifiOff class="size-4 shrink-0" aria-hidden="true" />
-			You are offline. This tool runs entirely in your browser and keeps working.
-		</div>
-	{/if}
 
 	<FileDropZone onfile={handleFile} />
 

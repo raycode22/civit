@@ -71,7 +71,11 @@
       {#if preview}
         <div class="flex flex-col items-center gap-4">
           <div class="favicon-preview rounded border bg-white p-3">
-            {preview} alt="Generated favicon for {name}" class="max-w-full max-h-40 rounded" />
+            <img
+              src={preview}
+              alt="Generated favicon for {name}"
+              class="max-w-full max-h-40 rounded"
+            />
           </div>
           <p class="text-xs opacity-60 text-center">{resultSize}</p>
           <div class="flex gap-2">

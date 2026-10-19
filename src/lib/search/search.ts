@@ -6,8 +6,9 @@ export interface ToolFilters {
   /** Restrict to one category; `null`/`undefined` means all categories. */
   category?: string | null;
   /**
-   * "Works offline" filter (PRD FR-23): keep tools whose declared offline
-   * support is anything except `online-only` (i.e. `full` or `partial`).
+   * "Offline-ready (Docker)" filter (PRD FR-23, D-20): keep tools whose
+   * declared offline support is anything except `online-only`
+   * (i.e. `full` or `partial`).
    */
   offlineOnly?: boolean;
 }
@@ -35,7 +36,8 @@ export function filterTools(tools: ToolMeta[], filters: ToolFilters = {}): ToolM
 
 /**
  * Search the tool catalog with fuzzy matching (Fuse.js), optionally
- * composed with a category filter and the "works offline" filter (FR-23).
+ * composed with a category filter and the "Offline-ready (Docker)" filter
+ * (FR-23, D-20).
  * Returns matches ranked by score; an empty query returns all tools that
  * pass the filters.
  */
