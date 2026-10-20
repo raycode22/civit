@@ -1,39 +1,33 @@
-# Civit deployment blueprint
+# Civit Project Planning Pack
 
-This directory contains the revised project rules and two separate deployment plans.
+This folder contains the initial product and engineering specification for Civit, a local-first, privacy-focused browser utility suite inspired by the user-provided Delphi.tools research.
 
 ## Documents
 
-1. `01-CONSTITUTION.md` — architecture and engineering rules for both targets.
-2. `02-PRD.md` — product requirements with online/offline requirements scoped correctly.
-3. `03-TECHNICAL-IMPLEMENTATION-PLAN.md` — shared implementation work and target-specific verification.
-4. `04-OFFLINE-FIRST-DECISIONS.md` — Docker/offline decisions and asset approval register.
-5. `05-ONLINE-DEPLOYMENT-PLAN.md` — Cloudflare Pages deployment, Hugging Face for ML model files, ffmpeg split, size and cost controls, release checks (R2 deferred).
-6. `06-DOCKER-OFFLINE-DEPLOYMENT-PLAN.md` — separate build profile, asset bundling, multi-stage image, air-gapped transfer and network-disabled tests.
+- [`how_to_use_this.md`](how_to_use_this.md) — reading order, stage gates, and definition of done.
+- [`01-constitution.md`](01-constitution.md) — product principles and non-negotiable architecture constraints.
+- [`02-prd.md`](02-prd.md) — MVP scope, personas, requirements, later roadmap, and acceptance criteria.
+- [`03-technical-implementation-plan.md`](03-technical-implementation-plan.md) — architecture, dependencies, code layout, testing, and stage gates.
+- [`04-online-deployment-plan.md`](04-online-deployment-plan.md) — Cloudflare Pages static deployment and large asset distribution.
+- [`05-offline-pwa-plan.md`](05-offline-pwa-plan.md) — PWA installability, caching, optional engine downloads, quota/eviction and tests.
+- [`06-docker-build-plan.md`](06-docker-build-plan.md) — multi-stage build, static runtime, non-root operation, and offline image variant.
+- [`07-research-and-stack-validation.md`](07-research-and-stack-validation.md) — source-vs-research distinction, current docs, and revisions to the supplied stack proposal.
 
-## Deployment principle
+## Recommended sequence
 
-Build from one codebase but create two distinct outputs:
+**Foundation → Online MVP → PWA core → Optional heavy offline engines → Docker → Wider tool catalogue.**
 
-- **Online:** Cloudflare Pages hosts `build/`; fonts and libraries are bundled; ML model files load from Hugging Face Hub; every Pages file stays under 25 MiB. R2 is deferred.
-- **Docker/offline:** all required runtime assets are included in the image and served locally; no external runtime network access is required.
+The supplied research provides product direction and candidate tool taxonomy. It is not treated as independent proof that all source-stack version claims are current or that all listed tools are already validated. The stack validation document records the key corrections.
 
-Both targets process user content locally and prohibit uploads, analytics and telemetry. The online profile is not required to be fully offline. Offline claims apply only to the Docker target unless a separate browser-PWA offline capability is explicitly implemented and tested.
+## Key architecture decisions
 
-## Authority and current provider references
+- Use Astro + Svelte 5 + TypeScript for the initial application.
+- Deploy static output to Cloudflare Pages first; do not add server APIs or a database to the MVP.
+- Keep large model binaries out of Pages output. Pages currently has a 25 MiB per-asset limit; use a separately configured R2 custom domain for large downloadable engines/models.
+- Add PWA support only after online routes/tools are stable. Cache a small core, download large engines explicitly, and represent offline readiness per tool.
+- Build Docker from the static artifact using a non-root web server image. Keep any full offline model bundle separate from the normal Pages build.
+- Use Rust/WASM, Comlink, Turborepo, FFmpeg, PDF, and ML libraries selectively when a specific feature justifies the cost.
 
-Cloudflare Pages and Hugging Face limits and exact build configuration can change. The online plan links to current official Cloudflare documentation and must be checked again before deployment. Plan estimates are not measured build results. These documents do not claim that a live Pages or Docker deployment has already been tested.
+## Status
 
-## Decisions of 2026-10-19
-
-1. Docker is the fully offline version; the hosted site needs internet.
-2. Fonts and JS libraries are bundled in both builds; no runtime CDNs.
-3. R2 and r2.dev are deferred.
-4. ffmpeg uses the single-thread core, split into pieces under 25 MiB for Pages.
-5. ML models load from Hugging Face online; Docker bundles small quantised ones; each model needs approval.
-6. One Docker image with a size budget of about 300 MB or less (estimate); heavy files are fetched at build time and never committed to Git; assets are precompressed.
-7. Cloudflare Pages hosts the site, with GitHub holding the source.
-8. The UI label becomes "Offline-ready (Docker)".
-9. Work order: documents, Stage 9A, Phase A, then B, C and D.
-
-Full log: `04-OFFLINE-FIRST-DECISIONS.md`.
+These documents are a plan, not an implemented or tested repository. Package versions, browser support, Cloudflare account limits, and model licences must be verified again at implementation time. The release gates describe how to turn the plan into a tested product rather than assuming that the architecture alone guarantees correctness.
