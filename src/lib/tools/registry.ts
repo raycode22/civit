@@ -5,6 +5,11 @@ import { meta as wordCounterMeta } from '$tools/word-counter/meta';
 import { meta as faviconGeneratorMeta } from '$tools/favicon-generator/meta';
 import { meta as imageClipperMeta } from '$tools/image-clipper/meta';
 import { meta as metadataStripperMeta } from '$tools/metadata-stripper/meta';
+import { meta as imageDeSkewMeta } from '$tools/image-de-skew/meta';
+import { meta as imageMaskerMeta } from '$tools/image-masker/meta';
+import { meta as largeTypeMeta } from '$tools/large-type/meta';
+import { meta as paperSizesMeta } from '$tools/paper-sizes/meta';
+import { meta as glyphBrowserMeta } from '$tools/glyph-browser/meta';
 
 /**
  * Central tool registry. Adding a tool means registering its metadata and a
@@ -39,6 +44,26 @@ export const tools: Tool[] = [
   {
     ...metadataStripperMeta,
     component: () => import('$tools/metadata-stripper/Tool.svelte')
+  },
+  {
+    ...imageDeSkewMeta,
+    component: () => import('$tools/image-de-skew/Tool.svelte')
+  },
+  {
+    ...imageMaskerMeta,
+    component: () => import('$tools/image-masker/Tool.svelte')
+  },
+  {
+    ...largeTypeMeta,
+    component: () => import('$tools/large-type/Tool.svelte')
+  },
+  {
+    ...paperSizesMeta,
+    component: () => import('$tools/paper-sizes/Tool.svelte')
+  },
+  {
+    ...glyphBrowserMeta,
+    component: () => import('$tools/glyph-browser/Tool.svelte')
   }
 ];
 

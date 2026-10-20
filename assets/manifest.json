@@ -8,7 +8,12 @@
     "word-counter",
     "favicon-generator",
     "image-clipper",
-    "metadata-stripper"
+    "metadata-stripper",
+    "image-de-skew",
+    "image-masker",
+    "large-type",
+    "paper-sizes",
+    "glyph-browser"
   ],
   "buildOutput": [
     {
