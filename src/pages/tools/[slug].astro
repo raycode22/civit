@@ -9,6 +9,9 @@ import type { ToolMetadata } from '../../lib/tools/types';
 import JsonFormatter from '../../components/tools/JsonFormatter.svelte';
 import UuidGenerator from '../../components/tools/UuidGenerator.svelte';
 import PasswordGenerator from '../../components/tools/PasswordGenerator.svelte';
+import WordCounter from '../../components/tools/WordCounter.svelte';
+import Base64Tool from '../../components/tools/Base64Tool.svelte';
+import UrlEncoder from '../../components/tools/UrlEncoder.svelte';
 
 // Registry-driven static paths: only implemented/published tools are emitted.
 // Empty registry → zero routes generated (safe: planned tools never look live).
@@ -33,7 +36,10 @@ if (!tool || tool.status !== 'implemented') {
     {tool.slug === 'json-formatter' && <JsonFormatter client:only="svelte" />}
     {tool.slug === 'uuid-generator' && <UuidGenerator client:only="svelte" />}
     {tool.slug === 'password-generator' && <PasswordGenerator client:only="svelte" />}
-    {tool.slug !== 'json-formatter' && tool.slug !== 'uuid-generator' && tool.slug !== 'password-generator' && (
+    {tool.slug === 'word-counter' && <WordCounter client:only="svelte" />}
+    {tool.slug === 'base64-tool' && <Base64Tool client:only="svelte" />}
+    {tool.slug === 'url-encoder' && <UrlEncoder client:only="svelte" />}
+    {tool.slug !== 'json-formatter' && tool.slug !== 'uuid-generator' && tool.slug !== 'password-generator' && tool.slug !== 'word-counter' && tool.slug !== 'base64-tool' && tool.slug !== 'url-encoder' && (
       <p>The tool interface for {tool.name} is rendered here by its registered component.</p>
     )}
   </ToolLayout>
