@@ -4,7 +4,7 @@
 
 Utilities are intended to perform processing locally in the user's browser wherever practical, particularly when handling user-provided files or sensitive content. The application aims to minimize unnecessary data transmission and avoid requiring an application backend for tools that can run entirely on the client.
 
-> **Status: Phase 2 in progress — registry landed, tools not started.** A buildable Astro site exists with a shared layout, daisyUI/Catppuccin light/dark theme system, a `/tools/` index rendered from the typed tool registry (currently empty by design), and pure search/validation logic. Civit is *not* yet functional as a product: no tools, home-page search UI, offline support, or deployment exist. Civit is not installable, offline-capable, production-ready, or feature-equivalent to Delphi.tools. See [Development status](#8-development-status-and-contribution-expectations) and [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md).
+> **Status: Phases 2–3 in progress — one tool implemented.** A buildable Astro site exists with a shared layout, daisyUI/Catppuccin light/dark theme system, a typed tool registry containing exactly one implemented tool, and a working **JSON Formatter** at `/tools/json-formatter/` (format/minify/clear/copy, processed entirely in your browser). Civit is *not* yet functional as a complete product: the remaining planned tools, home-page search UI, a static 404 page, offline support, and deployment do not exist. Civit is not installable, offline-capable, production-ready, or feature-equivalent to Delphi.tools. See [Development status](#8-development-status-and-contribution-expectations) and [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md).
 
 Intended users: developers, designers, and digital creators who want small, focused utilities (text, developer, colour, image, document, media work) without creating accounts or uploading their content to someone else's server. The problem it addresses: everyday utilities are either scattered across ad-laden single-purpose sites or require installing heavyweight software; Civit aims to be one trustworthy app where your files stay on your machine.
 
@@ -62,7 +62,7 @@ Product and engineering rules live in [`docs/planning/01-constitution.md`](docs/
 
 ## 5. Repository structure
 
-Actual contents at the time of writing (Phase 2 / Prompt 2B landed locally — shared shell and typed registry exist; tools arrive in Phase 3):
+Actual contents at the time of writing (Prompt 2B committed; Prompt 3A JSON Formatter landed locally — first real tool exists under `/tools/json-formatter/`):
 
 ```
 .
@@ -80,15 +80,17 @@ Actual contents at the time of writing (Phase 2 / Prompt 2B landed locally — s
 ├── src/
 │   ├── layouts/BaseLayout.astro       # Shared shell: landmarks, skip link, nav, footer, theme wiring
 │   ├── pages/index.astro              # Civit landing page (work-in-progress messaging)
-│   ├── pages/tools/index.astro        # /tools/ index rendered from the typed registry (empty state today)
-│   ├── pages/tools/[slug].astro       # Registry-driven dynamic tool routes (zero emitted until a tool ships)
+│   ├── pages/tools/index.astro        # /tools/ index rendered from the typed registry (lists implemented tools)
+│   ├── pages/tools/[slug].astro       # Registry-driven dynamic tool routes (emits /tools/json-formatter/)
 │   ├── components/ToolkitStatus.svelte  # Svelte 5 runes island (integration check only)
+│   ├── components/tools/JsonFormatter.svelte # JSON Formatter UI island (Prompt 3A)
 │   ├── components/ThemeToggle.svelte    # Svelte 5 light/dark toggle island
 │   ├── lib/text/wordCount.ts          # tiny pure engine used by the island
+│   ├── lib/tools/json.ts                # JSON Formatter engine (native parse/stringify, guardrails)
 │   ├── lib/theme/theme.ts             # pure theme resolution/persistence + pre-paint script source
 │   ├── lib/tools/                     # Typed tool registry (Prompt 2B)
 │   │   ├── types.ts                   # ToolMetadata contract per technical plan §4
-│   │   ├── registry.ts                # Single metadata source; empty until first implemented tool
+│   │   ├── registry.ts                # Single metadata source; one implemented entry (JSON Formatter)
 │   │   ├── validate.ts                # Build/test-time registry invariants
 │   │   └── routes.ts                  # Stable /tools/<slug>/ path helpers
 │   ├── lib/search/toolSearch.ts       # Pure search over registry metadata
@@ -99,6 +101,7 @@ Actual contents at the time of writing (Phase 2 / Prompt 2B landed locally — s
 │   ├── wordCount.test.ts      # Vitest unit tests
 │   ├── theme.test.ts          # theme resolution/persistence unit tests
 │   └── toolRegistry.test.ts   # registry validation + search matching unit tests
+    └── jsonFormatter.test.ts    # JSON Formatter engine unit tests
 └── docs/
     ├── BUILD_STATUS.md        # Honest, evidence-backed phase status tracker
     ├── design/
@@ -112,8 +115,8 @@ Actual contents at the time of writing (Phase 2 / Prompt 2B landed locally — s
 ```
 
 - **Root** holds project-level documentation (`README.md`, `AGENTS.md`) and the application scaffold configuration.
-- **`src/`** follows `docs/planning/03-technical-implementation-plan.md`: the shared layout, theme system, typed tool registry, and search logic exist, but no individual tool exists yet — the registry is intentionally empty and must not be assumed populated.
-- **`tests/`** currently holds only the foundation unit test; browser/e2e suites arrive with later phases.
+- **`src/`** follows `docs/planning/03-technical-implementation-plan.md`: the shared layout, theme system, typed tool registry, and search logic exist, plus the first vertical slice: the JSON Formatter. The registry contains exactly one implemented tool; all other planned tools are intentionally absent and must not be assumed to work.
+- **`tests/`** holds Vitest unit tests for the word-count, theme, registry/search, and JSON-formatter engines; browser/e2e suites arrive with later phases.
 - **`docs/planning/`** is the canonical location for the planning pack — product principles, PRD, technical plan, deployment/PWA/Docker plans, stack validation, and the phased build guide. These are *plans*, not evidence that code exists.
 - **`docs/decisions/`** holds architecture decision records (ADRs) for costly-to-reverse choices.
 - **`docs/BUILD_STATUS.md`** is the single checklist of what has actually been verified, phase by phase.
@@ -133,7 +136,7 @@ pnpm build                       # astro check && astro build → static dist/
 pnpm preview                     # serve the built dist/ locally to verify output
 ```
 
-What exists today is the foundation, the shared shell, and the typed tool registry plumbing: two static pages (home and `/tools/`), a theme system, two small interactive islands, and registry/search/validation modules with unit tests — but the registry contains no implemented tools, so there are no usable end-user tools yet. See [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) and the roadmap above. For the staged workflow, read [`docs/planning/how_to_use_this.md`](docs/planning/how_to_use_this.md) and execute [`docs/planning/08-qwen-coder-build-guide.md`](docs/planning/08-qwen-coder-build-guide.md) one scoped prompt at a time (next up after review: Prompt 2A — application shell polish, home search/categories, 404 page; then Phase 3 slices).
+What exists today is the foundation, the shared shell, the typed tool registry plumbing, and the first usable tool: three static pages (home, `/tools/`, `/tools/json-formatter/`), a theme system, three interactive islands, and registry/search/validation/JSON modules with unit tests. Everything else on the planned tool list is still unimplemented. See [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) and the roadmap above. For the staged workflow, read [`docs/planning/how_to_use_this.md`](docs/planning/how_to_use_this.md) and execute [`docs/planning/08-qwen-coder-build-guide.md`](docs/planning/08-qwen-coder-build-guide.md) one scoped prompt at a time (outstanding: Prompt 2A shell polish/home search/categories/404 — skipped earlier and tracked in BUILD_STATUS — then Prompts 3B–3H).
 
 ## 7. License
 
@@ -141,7 +144,7 @@ What exists today is the foundation, the shared shell, and the typed tool regist
 
 ## 8. Development status and contribution expectations
 
-Per [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md): **Phase 0 (planning pack, agent instructions, ADR, status tracker, repository organization, and this README) is complete.** In Phase 1, **Prompt 1A (foundation scaffold) is committed** (`5827faa`) and **Prompt 1B (shared application shell, theme system, daisyUI 5 + Catppuccin design system) is implemented and locally verified**. In Phase 2, **Prompt 2B (typed tool registry, search/validation logic, registry-driven `/tools/` routes) is implemented and locally verified** — `pnpm check` (0 errors/warnings/hints, 18 files), `pnpm test` (34 tests across 3 files), and `pnpm build` (static, 2 pages incl. `dist/tools/index.html`; zero `/tools/<slug>/` routes emitted because no tool is implemented yet) all passed on Node 22.22.0 / pnpm 10.34.7 — and awaits review/checkpoint. Prompt 2A (home search/categories UI, responsive-nav polish, 404 page) and Phases 3–10 have **not started**: no tools, home-page search UI, deployment, PWA, or Docker artifact exists. Browser-dependent behavior (toggle clicks, reload persistence, flash-of-wrong-theme) has **not** been tested in a real browser. Do not describe Civit as functional, offline-capable, or production-ready.
+Per [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md): **Phase 0 (planning pack, agent instructions, ADR, status tracker, repository organization, and this README) is complete.** In Phase 1, **Prompt 1A (foundation scaffold) is committed** (`5827faa`) and **Prompt 1B (shared application shell, theme system, daisyUI 5 + Catppuccin design system) is implemented and locally verified**. In Phase 2, **Prompt 2B (typed tool registry, search/validation logic, registry-driven `/tools/` routes) is committed** (`20e888a`, after reconciliation to include the first implemented tool). In Phase 3, **Prompt 3A (JSON Formatter vertical slice) is implemented and locally verified** — engine covered by 14 unit tests; `pnpm check` (0 errors/warnings/hints, 20 files), `pnpm test` (48 tests across 4 files), and `pnpm build` (static, 3 pages incl. `dist/tools/json-formatter/index.html`) all passed on Node 22.22.0 / pnpm 10.34.7; local preview served `/`, `/tools/`, and `/tools/json-formatter/` with HTTP 200 — and awaits review/checkpoint. Prompt 2A (home search/categories UI, responsive-nav polish, 404 page) and Prompts 3B–10 have **not started**: beyond the JSON Formatter there are no other tools, no home-page search UI, no deployment, PWA, or Docker artifact. Browser-dependent behavior (theme-toggle clicks, reload persistence, flash-of-wrong-theme, formatter typing/clicks/clipboard) has **not** been tested in a real browser. Do not describe Civit as functional, offline-capable, or production-ready.
 
 Expectations for contributors and AI coding agents (full detail in [`AGENTS.md`](AGENTS.md)):
 
