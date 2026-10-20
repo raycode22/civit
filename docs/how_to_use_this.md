@@ -4,6 +4,8 @@ These documents define a staged implementation plan for **Civit**, a local-first
 
 ## Read in this order
 
+For the actual browser-based execution workflow, start with **`08-qwen-coder-build-guide.md`** after reviewing the product and technical requirements. It supplies one copy-paste prompt per task, review gates, and troubleshooting prompts for Qwen Coder.
+
 1. **`01-constitution.md`** — the non-negotiable product and engineering rules. Resolve conflicts against this document first.
 2. **`02-prd.md`** — what Civit should ship, who it serves, what is out of scope, and how success is measured.
 3. **`03-technical-implementation-plan.md`** — the code structure, architecture decisions, engineering standards, and stage gates.

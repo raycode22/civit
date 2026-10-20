@@ -5,6 +5,7 @@ This folder contains the initial product and engineering specification for Civit
 ## Documents
 
 - [`how_to_use_this.md`](how_to_use_this.md) — reading order, stage gates, and definition of done.
+- [`08-qwen-coder-build-guide.md`](08-qwen-coder-build-guide.md) — step-by-step prompts and acceptance checks tailored to Qwen Coder in the browser.
 - [`01-constitution.md`](01-constitution.md) — product principles and non-negotiable architecture constraints.
 - [`02-prd.md`](02-prd.md) — MVP scope, personas, requirements, later roadmap, and acceptance criteria.
 - [`03-technical-implementation-plan.md`](03-technical-implementation-plan.md) — architecture, dependencies, code layout, testing, and stage gates.
