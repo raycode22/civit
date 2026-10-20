@@ -1,0 +1,75 @@
+---
+// Civit landing page — Phase 1 foundation (Prompt 1A).
+// Static HTML shell; the single Svelte island below only verifies that the
+// @astrojs/svelte + Svelte 5 integration compiles and hydrates.
+import '../styles/global.css';
+import ToolkitStatus from '../components/ToolkitStatus.svelte';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Civit — local-first browser toolkit (work in progress)</title>
+    <meta
+      name="description"
+      content="Civit is a work-in-progress, privacy-focused browser toolkit for developers, designers, and digital creators. Utilities run locally in your browser."
+    />
+    <!-- No analytics, no telemetry, no external fonts, no runtime CDN requests. -->
+  </head>
+  <body class="min-h-screen bg-[var(--civit-bg)] text-[var(--civit-text)] antialiased">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded focus:bg-[var(--civit-accent)] focus:px-3 focus:py-2 focus:text-[var(--civit-bg)]"
+      >Skip to main content</a
+    >
+
+    <header class="mx-auto max-w-3xl px-6 pt-12 sm:pt-16">
+      <p class="text-sm font-semibold uppercase tracking-wide text-[var(--civit-muted)]">
+        Work in progress — foundation scaffold
+      </p>
+      <h1 class="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">Civit</h1>
+      <p class="mt-4 text-lg leading-relaxed">
+        A planned <strong>local-first, privacy-focused browser toolkit</strong> for developers,
+        designers, and digital creators — small, focused utilities that process your text and files
+        in your own browser wherever practical.
+      </p>
+    </header>
+
+    <main id="main" class="mx-auto max-w-3xl px-6 py-10">
+      <section aria-labelledby="status-heading" class="rounded-lg border border-[var(--civit-border)] bg-[var(--civit-surface)] p-6">
+        <h2 id="status-heading" class="text-xl font-semibold">Current status</h2>
+        <p class="mt-2 leading-relaxed">
+          Civit is in the earliest build stage: this page is the first static scaffold. The
+          utilities described in the project plan (JSON formatter, word counter, colour tools, and
+          others) are <strong>planned but not yet implemented</strong>. Nothing on this page sends
+          your data anywhere — there is no backend, no account system, and no analytics.
+        </p>
+        <ul class="mt-4 list-disc space-y-1 pl-5 text-[var(--civit-muted)]">
+          <li>Planned: a curated collection of browser-side utilities.</li>
+          <li>Planned later: installable PWA / offline support, then Docker self-hosting.</li>
+          <li>Not built yet: the tool catalogue, search, or any individual utility.</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="island-heading" class="mt-8">
+        <h2 id="island-heading" class="text-xl font-semibold">Interactive check (Svelte&nbsp;5 island)</h2>
+        <p class="mt-2 text-[var(--civit-muted)]">
+          The control below exists only to verify that interactive components compile and hydrate
+          correctly. Everything it shows is computed locally in your browser.
+        </p>
+        <div class="mt-4">
+          <ToolkitStatus client:load />
+        </div>
+      </section>
+    </main>
+
+    <footer class="mx-auto max-w-3xl px-6 pb-12 text-sm text-[var(--civit-muted)]">
+      <p>
+        Built with Astro (static output), Svelte 5, TypeScript, and Tailwind CSS v4. See
+        <code>docs/BUILD_STATUS.md</code> in the repository for honest phase status.
+      </p>
+    </footer>
+  </body>
+</html>

@@ -4,7 +4,7 @@
 
 **Rule:** do not mark a code phase complete based on plans, generated snippets, or unexecuted commands. Commands that were not run must be listed as "not run" with the exact verification command.
 
-**Last updated:** 2026-10-20 (Phase 0 / Prompt 0B)
+**Last updated:** 2026-10-20 (Phase 1 / Prompt 1A)
 
 ---
 
@@ -15,7 +15,7 @@
 | 0 | Planning pack & repository preparation | ✅ Complete | Planning documents committed under the canonical `docs/planning/`; root `AGENTS.md`, `docs/decisions/0001-static-first.md`, and this status file added by Prompt 0A; pack relocated and references reconciled by Prompt 0B (`git mv`, history preserved). No application code exists yet. |
 | 0 | Agent instructions & decision records (Prompt 0A) | ✅ Complete | `AGENTS.md`, ADR 0001, and this status file reviewed and committed in the Prompt 0A checkpoint commit. |
 | 0 | Repository organization & root README (Prompt 0B) | 🟡 In progress | Working tree only — awaiting user review/commit. Changes: planning pack relocated to `docs/planning/` via `git mv`; root `README.md` created; references updated in `AGENTS.md`, this file, and ADR 0001. No scaffold, dependencies, or application code added. |
-| 1 | Foundation — Astro static scaffold (Prompt 1A) | ❌ Not started | Gate: clean `pnpm install --frozen-lockfile`; `pnpm check`, `pnpm test`, `pnpm build` pass; `dist/` produced without Cloudflare credentials or a server adapter. |
+| 1 | Foundation — Astro static scaffold (Prompt 1A) | 🟡 Implemented, awaiting review/commit | Scaffolded at repo root on Node 22.22.0 / pnpm 10.34.7: Astro `^7.4.1` (`output: 'static'`), `@astrojs/svelte ^9.1.0` + Svelte `^5.57.2`, Tailwind `^4.3.3` via `@tailwindcss/vite`, TS strict (`astro/tsconfigs/strict`) with `typescript ~5.9.0` + `@astrojs/check`, Vitest `^3.2.7`. Ran & passed: `pnpm install --frozen-lockfile`, `pnpm check` (0 errors/warnings/hints), `pnpm test` (3/3), `pnpm build` (static `dist/index.html` + hashed JS/CSS incl. compiled Svelte island), `pnpm preview` (HTTP 200). Astro telemetry disabled locally. Not done here: lint/format tooling and `.github/workflows/ci.yml` (planned Prompt 1B); no PWA/Docker/backend added. |
 | 2 | Application shell — design system, layout, a11y (Prompt 2A) | ❌ Not started | Gate: responsive nav, home search/categories, tool-page layout, 404, skip link; manual accessibility checks recorded below. |
 | 2 | Typed tool registry & routes (Prompt 2B) | ❌ Not started | Gate: registry validation tests pass; only implemented tools visible; direct routes emitted in `dist/`. |
 | 3 | Lightweight tool vertical slices (Prompts 3A–3H) | ❌ Not started | JSON Formatter → UUID + Password → Word Counter + Base64/URL → Text Diff → Colour Converter + Contrast Checker → Unit Converter → QR Generator → Image Resize/Compress. Each slice needs UI, engine, validation, unit/browser tests, registry entry, docs. None started. |

@@ -4,7 +4,7 @@
 
 Utilities are intended to perform processing locally in the user's browser wherever practical, particularly when handling user-provided files or sensitive content. The application aims to minimize unnecessary data transmission and avoid requiring an application backend for tools that can run entirely on the client.
 
-> **Status: planning / documentation only.** No application code exists yet. Civit is *not* currently functional, installable, offline-capable, production-ready, or feature-equivalent to Delphi.tools. See [Development status](#8-development-status-and-contribution-expectations) and [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md).
+> **Status: early foundation scaffold (Phase 1 / Prompt 1A).** A minimal buildable Astro site with one verification island now exists, but Civit is *not* yet functional as a product: no tools, navigation, search, offline support, or deployment exist. Civit is not installable, offline-capable, production-ready, or feature-equivalent to Delphi.tools. See [Development status](#8-development-status-and-contribution-expectations) and [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md).
 
 Intended users: developers, designers, and digital creators who want small, focused utilities (text, developer, colour, image, document, media work) without creating accounts or uploading their content to someone else's server. The problem it addresses: everyday utilities are either scattered across ad-laden single-purpose sites or require installing heavyweight software; Civit aims to be one trustworthy app where your files stay on your machine.
 
@@ -18,20 +18,21 @@ Intended users: developers, designers, and digital creators who want small, focu
 
 ## 2. Technology stack (planned baseline)
 
-The stack below is the *accepted plan* from [`AGENTS.md`](AGENTS.md), [`docs/planning/03-technical-implementation-plan.md`](docs/planning/03-technical-implementation-plan.md), and [`docs/decisions/0001-static-first.md`](docs/decisions/0001-static-first.md). None of it is configured in this repository yet — there is no `package.json`, lockfile, or framework code at the time of writing. If future repository configuration ever contradicts this list, that discrepancy must be reported and resolved via a decision record, not silently.
+The stack below is the accepted plan from [`AGENTS.md`](AGENTS.md), [`docs/planning/03-technical-implementation-plan.md`](docs/planning/03-technical-implementation-plan.md), and [`docs/decisions/0001-static-first.md`](docs/decisions/0001-static-first.md). As of Phase 1 / Prompt 1A it is **configured in the repository** with these verified versions (`astro --version` = 7.4.1; exact resolutions recorded in `pnpm-lock.yaml`; TypeScript pinned to the 5.9 line because Astro/Svelte tooling does not yet target the newly released TypeScript 7):
 
-| Layer | Planned choice |
+| Layer | Choice (installed) |
 |---|---|
-| Framework | Astro with static-first output (`output: 'static'`) |
-| Interactive UI | Svelte 5 islands (via `@astrojs/svelte`), hydrating the active tool only |
-| Language | TypeScript with strict type checking |
-| Styling | Tailwind CSS v4 (official `@tailwindcss/vite` integration) + CSS design tokens |
-| Package manager | pnpm (committed `pnpm-lock.yaml`) |
-| Development runtime | Node.js 22 LTS baseline |
-| Initial online deployment | Cloudflare Pages (static hosting, no Functions/server runtime) |
-| Later stages | PWA infrastructure (`@vite-pwa/astro`, manifest, service worker) and Docker — introduced only in their own phases |
+| Framework | Astro `^7.4.1`, explicit `output: 'static'` |
+| Interactive UI | Svelte `^5.57.2` islands via `@astrojs/svelte ^9.1.0`, hydrating the active island only |
+| Language | TypeScript strict (`astro/tsconfigs/strict`), `typescript ~5.9.0`, checked by `@astrojs/check ^0.9.11` |
+| Styling | Tailwind CSS `^4.3.3` via the official `@tailwindcss/vite ^4.3.3` plugin + CSS design tokens |
+| Package manager | pnpm `10.34.7` (`packageManager` field; committed `pnpm-lock.yaml`) |
+| Development runtime | Node.js `22.22.0` (`.nvmrc`; Astro's engines require ≥ 22.22.0) |
+| Unit tests | Vitest `^3.2.7` (v5 kept out until Astro/Svelte compatibility is verified) |
+| Initial online deployment | Cloudflare Pages (static hosting, no Functions/server runtime) — **not configured yet (Phase 5)** |
+| Later stages | PWA infrastructure (`@vite-pwa/astro`, manifest, service worker) and Docker — **not installed, by design** |
 
-Testing is planned around Vitest (unit) and Playwright (browser/e2e) once code exists.
+Playwright browser/e2e tests arrive once UI flows exist (Phases 2–4); ESLint/Prettier are pinned when the shell lands. None of these later-phase tools are installed at Prompt 1A.
 
 ## 3. Architecture and privacy
 
@@ -61,13 +62,28 @@ Product and engineering rules live in [`docs/planning/01-constitution.md`](docs/
 
 ## 5. Repository structure
 
-Actual contents at the time of writing (documentation only — no `src/`, `package.json`, or config files exist yet):
+Actual contents at the time of writing (Phase 1 / Prompt 1A — foundation scaffold; the application shell, registry, and tools arrive in later phases):
 
 ```
 .
 ├── AGENTS.md                  # Instructions for AI agents and contributors (repo root)
 ├── README.md                  # This file
-├── .gitignore                 # Basic ignores (node_modules, build artifacts)
+├── .gitignore                 # Ignores node_modules, dist/, .astro/, logs
+├── .nvmrc                     # Pinned Node.js runtime (22.22.0)
+├── package.json               # Scripts: dev, check, test, build, preview
+├── pnpm-lock.yaml             # Committed lockfile (reproducible installs)
+├── pnpm-workspace.yaml        # onlyBuiltDependencies: [esbuild]
+├── astro.config.ts            # output: 'static', Svelte integration, Tailwind v4 Vite plugin
+├── svelte.config.js           # vitePreprocess for TS-in-Svelte tooling
+├── tsconfig.json              # extends astro/tsconfigs/strict
+├── vitest.config.ts           # unit tests (node environment, tests/**)
+├── src/
+│   ├── pages/index.astro      # Civit landing page (work-in-progress messaging)
+│   ├── components/ToolkitStatus.svelte  # Svelte 5 runes island (integration check only)
+│   ├── lib/text/wordCount.ts  # tiny pure engine used by the island
+│   └── styles/global.css      # Tailwind v4 import + design-token CSS variables
+├── tests/
+│   └── wordCount.test.ts      # Vitest unit tests
 └── docs/
     ├── BUILD_STATUS.md        # Honest, evidence-backed phase status tracker
     ├── decisions/
@@ -75,32 +91,32 @@ Actual contents at the time of writing (documentation only — no `src/`, `packa
     └── planning/              # Canonical home of the planning pack
         ├── README.md          # Planning-pack index
         ├── how_to_use_this.md # Reading order, stage gates, definition of done
-        ├── 01-constitution.md
-        ├── 02-prd.md
-        ├── 03-technical-implementation-plan.md
-        ├── 04-online-deployment-plan.md
-        ├── 05-offline-pwa-plan.md
-        ├── 06-docker-build-plan.md
-        ├── 07-research-and-stack-validation.md
-        └── 08-qwen-coder-build-guide.md
+        └── 01…08-*.md         # Constitution, PRD, technical/deployment/PWA/Docker plans, build guide
 ```
 
-- **Root** holds project-level documentation: `README.md` (what/why) and `AGENTS.md` (how agents/contributors must work here).
-- **`docs/planning/`** is the canonical location for the planning pack — product principles, PRD, technical plan, deployment/PWA/Docker plans, stack validation, and the phased build guide. These are *plans*, not evidence that code exists. (The planned future `src/` layout in `docs/planning/03-technical-implementation-plan.md` describes where application code *will* live; none of it exists yet.)
+- **Root** holds project-level documentation (`README.md`, `AGENTS.md`) and the application scaffold configuration.
+- **`src/`** is the beginning of the application described in `docs/planning/03-technical-implementation-plan.md`; directories like `src/tools/`, layouts, and the registry do **not** exist yet and must not be assumed.
+- **`tests/`** currently holds only the foundation unit test; browser/e2e suites arrive with later phases.
+- **`docs/planning/`** is the canonical location for the planning pack — product principles, PRD, technical plan, deployment/PWA/Docker plans, stack validation, and the phased build guide. These are *plans*, not evidence that code exists.
 - **`docs/decisions/`** holds architecture decision records (ADRs) for costly-to-reverse choices.
 - **`docs/BUILD_STATUS.md`** is the single checklist of what has actually been verified, phase by phase.
 
 ## 6. Getting started
 
-**Current state:** the repository contains only planning and operational documentation. There is no `package.json`, so **there are no working install, dev, test, or build commands yet** — inventing them would be dishonest, and they are forbidden until Phase 1 creates and verifies them.
+**Prerequisites:** Node.js 22.22.0+ (see `.nvmrc`) and pnpm 10 (the `packageManager` field pins `pnpm@10.34.7`; enable it with Corepack or install it directly).
 
-What you can do today:
+Verified commands (all executed successfully on Node 22.22.0 / pnpm 10.34.7 during Prompt 1A):
 
-1. Read [`docs/planning/README.md`](docs/planning/README.md) for the pack index and reading order.
-2. Follow [`docs/planning/how_to_use_this.md`](docs/planning/how_to_use_this.md) for stage gates and the definition of done.
-3. Execute the roadmap with [`docs/planning/08-qwen-coder-build-guide.md`](docs/planning/08-qwen-coder-build-guide.md) — one scoped prompt per task, starting with Prompt 1A (Phase 1 foundation) only after Phase 0 is reviewed and committed.
+```bash
+pnpm install --frozen-lockfile   # reproducible install from the committed lockfile
+pnpm dev                         # local development server (Astro)
+pnpm check                       # astro check — TypeScript/Astro/Svelte diagnostics
+pnpm test                        # vitest run — unit tests
+pnpm build                       # astro check && astro build → static dist/
+pnpm preview                     # serve the built dist/ locally to verify output
+```
 
-When the application scaffold exists (Phase 1+), this section will be updated with the verified commands from `package.json` (expected shape: `pnpm install --frozen-lockfile`, `pnpm dev`, `pnpm check`, `pnpm test`, `pnpm build`, `pnpm preview` — none of these can run yet).
+What exists today is only the foundation: a static landing page and one interactive verification island. There are no usable end-user tools yet — see [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) and the roadmap above. For the staged workflow, read [`docs/planning/how_to_use_this.md`](docs/planning/how_to_use_this.md) and execute [`docs/planning/08-qwen-coder-build-guide.md`](docs/planning/08-qwen-coder-build-guide.md) one scoped prompt at a time (next up: Prompt 1B).
 
 ## 7. License
 
