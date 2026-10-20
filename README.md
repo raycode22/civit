@@ -4,7 +4,7 @@
 
 Utilities are intended to perform processing locally in the user's browser wherever practical, particularly when handling user-provided files or sensitive content. The application aims to minimize unnecessary data transmission and avoid requiring an application backend for tools that can run entirely on the client.
 
-> **Status: application shell in progress (Phase 1 / Prompt 1B).** A minimal buildable Astro site with a shared layout, light/dark theme system, and a `/tools/` placeholder route now exists, but Civit is *not* yet functional as a product: no tools, search, registry, offline support, or deployment exist. Civit is not installable, offline-capable, production-ready, or feature-equivalent to Delphi.tools. See [Development status](#8-development-status-and-contribution-expectations) and [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md).
+> **Status: Phase 2 in progress — registry landed, tools not started.** A buildable Astro site exists with a shared layout, daisyUI/Catppuccin light/dark theme system, a `/tools/` index rendered from the typed tool registry (currently empty by design), and pure search/validation logic. Civit is *not* yet functional as a product: no tools, home-page search UI, offline support, or deployment exist. Civit is not installable, offline-capable, production-ready, or feature-equivalent to Delphi.tools. See [Development status](#8-development-status-and-contribution-expectations) and [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md).
 
 Intended users: developers, designers, and digital creators who want small, focused utilities (text, developer, colour, image, document, media work) without creating accounts or uploading their content to someone else's server. The problem it addresses: everyday utilities are either scattered across ad-laden single-purpose sites or require installing heavyweight software; Civit aims to be one trustworthy app where your files stay on your machine.
 
@@ -62,7 +62,7 @@ Product and engineering rules live in [`docs/planning/01-constitution.md`](docs/
 
 ## 5. Repository structure
 
-Actual contents at the time of writing (Phase 1 / Prompt 1B — shared shell landed; registry and tools arrive in later phases):
+Actual contents at the time of writing (Phase 2 / Prompt 2B landed locally — shared shell and typed registry exist; tools arrive in Phase 3):
 
 ```
 .
@@ -80,17 +80,25 @@ Actual contents at the time of writing (Phase 1 / Prompt 1B — shared shell lan
 ├── src/
 │   ├── layouts/BaseLayout.astro       # Shared shell: landmarks, skip link, nav, footer, theme wiring
 │   ├── pages/index.astro              # Civit landing page (work-in-progress messaging)
-│   ├── pages/tools/index.astro        # Honest /tools/ placeholder (no fake tools)
+│   ├── pages/tools/index.astro        # /tools/ index rendered from the typed registry (empty state today)
+│   ├── pages/tools/[slug].astro       # Registry-driven dynamic tool routes (zero emitted until a tool ships)
 │   ├── components/ToolkitStatus.svelte  # Svelte 5 runes island (integration check only)
 │   ├── components/ThemeToggle.svelte    # Svelte 5 light/dark toggle island
 │   ├── lib/text/wordCount.ts          # tiny pure engine used by the island
 │   ├── lib/theme/theme.ts             # pure theme resolution/persistence + pre-paint script source
+│   ├── lib/tools/                     # Typed tool registry (Prompt 2B)
+│   │   ├── types.ts                   # ToolMetadata contract per technical plan §4
+│   │   ├── registry.ts                # Single metadata source; empty until first implemented tool
+│   │   ├── validate.ts                # Build/test-time registry invariants
+│   │   └── routes.ts                  # Stable /tools/<slug>/ path helpers
+│   ├── lib/search/toolSearch.ts       # Pure search over registry metadata
 │   └── styles/
 │       ├── global.css                 # Tailwind v4 import + daisyUI @plugin
 │       └── theme.css                  # catppuccin-latte / catppuccin-mocha daisyUI themes + Civit tokens
 ├── tests/
 │   ├── wordCount.test.ts      # Vitest unit tests
-│   └── theme.test.ts          # theme resolution/persistence unit tests
+│   ├── theme.test.ts          # theme resolution/persistence unit tests
+│   └── toolRegistry.test.ts   # registry validation + search matching unit tests
 └── docs/
     ├── BUILD_STATUS.md        # Honest, evidence-backed phase status tracker
     ├── design/
@@ -104,7 +112,7 @@ Actual contents at the time of writing (Phase 1 / Prompt 1B — shared shell lan
 ```
 
 - **Root** holds project-level documentation (`README.md`, `AGENTS.md`) and the application scaffold configuration.
-- **`src/`** is the beginning of the application described in `docs/planning/03-technical-implementation-plan.md`; the shared layout, theme system, and tool-route placeholder exist, but `src/tools/` and the typed registry do **not** exist yet and must not be assumed.
+- **`src/`** follows `docs/planning/03-technical-implementation-plan.md`: the shared layout, theme system, typed tool registry, and search logic exist, but no individual tool exists yet — the registry is intentionally empty and must not be assumed populated.
 - **`tests/`** currently holds only the foundation unit test; browser/e2e suites arrive with later phases.
 - **`docs/planning/`** is the canonical location for the planning pack — product principles, PRD, technical plan, deployment/PWA/Docker plans, stack validation, and the phased build guide. These are *plans*, not evidence that code exists.
 - **`docs/decisions/`** holds architecture decision records (ADRs) for costly-to-reverse choices.
@@ -125,7 +133,7 @@ pnpm build                       # astro check && astro build → static dist/
 pnpm preview                     # serve the built dist/ locally to verify output
 ```
 
-What exists today is the foundation plus the shared shell: two static pages (home and `/tools/` placeholder), a theme system, and two small interactive islands. There are no usable end-user tools yet — see [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) and the roadmap above. For the staged workflow, read [`docs/planning/how_to_use_this.md`](docs/planning/how_to_use_this.md) and execute [`docs/planning/08-qwen-coder-build-guide.md`](docs/planning/08-qwen-coder-build-guide.md) one scoped prompt at a time (next up after review: Prompt 1C / Phase 2).
+What exists today is the foundation, the shared shell, and the typed tool registry plumbing: two static pages (home and `/tools/`), a theme system, two small interactive islands, and registry/search/validation modules with unit tests — but the registry contains no implemented tools, so there are no usable end-user tools yet. See [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) and the roadmap above. For the staged workflow, read [`docs/planning/how_to_use_this.md`](docs/planning/how_to_use_this.md) and execute [`docs/planning/08-qwen-coder-build-guide.md`](docs/planning/08-qwen-coder-build-guide.md) one scoped prompt at a time (next up after review: Prompt 2A — application shell polish, home search/categories, 404 page; then Phase 3 slices).
 
 ## 7. License
 
@@ -133,7 +141,7 @@ What exists today is the foundation plus the shared shell: two static pages (hom
 
 ## 8. Development status and contribution expectations
 
-Per [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md): **Phase 0 (planning pack, agent instructions, ADR, status tracker, repository organization, and this README) is complete.** In Phase 1, **Prompt 1A (foundation scaffold) is committed** (`5827faa`) and **Prompt 1B (shared application shell, theme system, `/tools/` placeholder) is implemented and locally verified** — `pnpm check` (0 errors/warnings/hints), `pnpm test` (11/11 across 2 files), and `pnpm build` (static, 2 pages incl. `dist/tools/index.html`) all passed on Node 22.22.0 / pnpm 10.34.7 — and is awaiting review/checkpoint; browser-dependent behavior (toggle clicks, reload persistence, flash-of-wrong-theme) has **not** been tested in a real browser. Neither prompt means Phase 1 is complete, and **Phases 2–10 have not started**: no tools, registry/search, deployment, PWA, or Docker artifact exists. Do not describe Civit as functional, offline-capable, or production-ready. Do not describe Civit as functional, offline-capable, or production-ready.
+Per [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md): **Phase 0 (planning pack, agent instructions, ADR, status tracker, repository organization, and this README) is complete.** In Phase 1, **Prompt 1A (foundation scaffold) is committed** (`5827faa`) and **Prompt 1B (shared application shell, theme system, daisyUI 5 + Catppuccin design system) is implemented and locally verified**. In Phase 2, **Prompt 2B (typed tool registry, search/validation logic, registry-driven `/tools/` routes) is implemented and locally verified** — `pnpm check` (0 errors/warnings/hints, 18 files), `pnpm test` (34 tests across 3 files), and `pnpm build` (static, 2 pages incl. `dist/tools/index.html`; zero `/tools/<slug>/` routes emitted because no tool is implemented yet) all passed on Node 22.22.0 / pnpm 10.34.7 — and awaits review/checkpoint. Prompt 2A (home search/categories UI, responsive-nav polish, 404 page) and Phases 3–10 have **not started**: no tools, home-page search UI, deployment, PWA, or Docker artifact exists. Browser-dependent behavior (toggle clicks, reload persistence, flash-of-wrong-theme) has **not** been tested in a real browser. Do not describe Civit as functional, offline-capable, or production-ready.
 
 Expectations for contributors and AI coding agents (full detail in [`AGENTS.md`](AGENTS.md)):
 
