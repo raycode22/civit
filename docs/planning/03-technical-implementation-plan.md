@@ -12,7 +12,7 @@
 | Site shell and routes | Astro static output | File-based routes and static HTML are appropriate for a catalogue of independent tools. Avoid server rendering and adapters while no server behavior is required. |
 | Interactive tools | Svelte 5 components through `@astrojs/svelte` | Use `client:load` for the active tool’s interactive UI; defer below-the-fold or non-critical widgets. Do not hydrate every tool in the site. |
 | Language | TypeScript strict mode | Tool contracts, registry metadata, and browser capability checks benefit from compile-time constraints. |
-| Styling | Tailwind CSS v4 via `@tailwindcss/vite`; CSS variables for design tokens | Use a single current integration path rather than mixing Tailwind v3 and v4 setup. Keep semantic CSS variables independent of utility classes. |
+| Styling | Tailwind CSS v4 via `@tailwindcss/vite`; daisyUI 5 (CSS `@plugin`) with custom Catppuccin Latte/Mocha themes; CSS variables for design tokens | Use a single current integration path rather than mixing Tailwind v3 and v4 setup. Keep semantic CSS variables independent of utility classes. Selected in Prompt 1B revision — see `docs/design/catppuccin-style-guide.md`. |
 | Accessible primitives | Bits UI for controls that benefit from built-in keyboard/focus behavior | Use selectively. A headless library does not remove the need for accessibility tests. Avoid importing large component bundles into the home page. |
 | Package manager | pnpm with committed lockfile | Reproducible installs and efficient dependency management. Use the package-manager version field and Corepack or the CI setup action. |
 | Unit tests | Vitest | Fast TypeScript unit tests for deterministic logic and parsers. |

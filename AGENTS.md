@@ -22,6 +22,7 @@ The committed planning pack in `docs/planning/` is the project baseline. **Read 
 - `docs/planning/README.md` — planning-pack index.
 - `docs/BUILD_STATUS.md` — current roadmap phase status (update when a phase's acceptance criteria actually pass).
 - `docs/decisions/` — architecture decision records for costly-to-reverse choices.
+- `docs/design/catppuccin-style-guide.md` — permanent visual-system guide (theme policy, palette, daisyUI mapping, contrast rules).
 
 These documents are plans, not evidence that code exists or tests passed. Never treat a documented claim as a verified fact at implementation time — re-check current official vendor documentation (versions, limits, compatibility) before relying on it.
 
@@ -41,7 +42,7 @@ These documents are plans, not evidence that code exists or tests passed. Never 
 - **Astro** with `output: 'static'` for routes and shell.
 - **Svelte 5** via `@astrojs/svelte` for interactive tool islands only; hydrate the active tool, not every widget.
 - **TypeScript strict mode.**
-- **Tailwind CSS v4** via the official `@tailwindcss/vite` integration (never the old `@astrojs/tailwind` v3 path), plus CSS variables for design tokens.
+- **Tailwind CSS v4** via the official `@tailwindcss/vite` integration (never the old `@astrojs/tailwind` v3 path), **daisyUI 5** via its CSS `@plugin` syntax, and the **Catppuccin** palette (Latte = light, Mocha = dark, Blue = primary accent). Rules: `docs/design/catppuccin-style-guide.md` — follow it for all UI work; no other component library without a decision record.
 - **pnpm** with a committed `pnpm-lock.yaml`; Node 22 LTS (Astro's current install docs require ≥ 22.22.0 — verify at bootstrap time).
 - **Vitest** unit tests; **Playwright** browser/e2e tests once UI flows exist.
 - ESLint + Prettier (or one consciously chosen alternative) pinned at initialization.

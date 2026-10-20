@@ -1,0 +1,36 @@
+---
+// Civit tools route placeholder — Prompt 1B (Catppuccin + daisyUI revision).
+// Honest status page only: no fake tools, no invented catalogue entries.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Tools"
+  description="Planned home of the Civit local-first browser toolkit. Individual utilities have not been implemented yet."
+>
+  <h1 class="text-3xl font-bold tracking-tight">Tools</h1>
+  <p class="mt-4 text-lg leading-relaxed">
+    This is where the Civit toolkit catalogue will live. Each utility will get its own page under
+    <code class="rounded bg-base-200 px-1">/tools/&lt;tool-name&gt;/</code> and will
+    process your content locally in this browser wherever practical.
+  </p>
+
+  <section aria-labelledby="tools-status-heading" class="card mt-8 border border-[var(--civit-border-subtle)] bg-base-200 shadow-sm">
+    <div class="card-body gap-0">
+      <h2 id="tools-status-heading" class="card-title text-xl">Status</h2>
+      <p class="mt-2 leading-relaxed">
+        <strong>No tools are implemented yet.</strong> The project is at the shared-application-shell
+        stage (Phase 1). Tool pages will be added one vertical slice at a time, each with its own
+        tests, as recorded honestly in <code class="rounded bg-base-300 px-1">docs/BUILD_STATUS.md</code>.
+      </p>
+      <ul class="mt-4 list-disc space-y-1 pl-5 text-base-content/70">
+        <li>Planned: a curated collection of browser-side utilities for developers, designers, and digital creators.</li>
+        <li>Not built yet: search, the tool registry, or any individual utility.</li>
+      </ul>
+    </div>
+  </section>
+
+  <p class="mt-8 text-sm">
+    <a href="/" class="link link-primary">← Back to the Civit home page</a>
+  </p>
+</BaseLayout>
