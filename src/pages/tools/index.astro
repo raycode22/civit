@@ -1,32 +1,106 @@
 ---
-// Civit tools route placeholder — Prompt 1B (Catppuccin + daisyUI revision).
-// Honest status page only: no fake tools, no invented catalogue entries.
+// Civit tools catalogue route — Prompt 2B (registry-driven), planned-tool
+// listing and category empty states completed in Prompt 2A.
+// The typed registry + planning catalogue are the single sources of discovery
+// metadata. Only implemented/published tools are linked as working; planned
+// tools are shown honestly with an explicit "not built yet" state and no routes.
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { publishedTools } from '../../lib/tools/registry';
+import { plannedTools } from '../../lib/tools/catalogue';
+import { toolPath } from '../../lib/tools/routes';
+import { TOOL_CATEGORIES, type ToolCategory, type ToolMetadata } from '../../lib/tools/types';
+
+const byCategory = (list: readonly ToolMetadata[], cat: ToolCategory) =>
+  list.filter((t) => t.category === cat);
 ---
 
 <BaseLayout
   title="Tools"
-  description="Planned home of the Civit local-first browser toolkit. Individual utilities have not been implemented yet."
+  description="The Civit toolkit catalogue: one implemented local-first utility today (JSON Formatter), with the remaining planned tools listed honestly as not built yet."
 >
   <h1 class="text-3xl font-bold tracking-tight">Tools</h1>
   <p class="mt-4 text-lg leading-relaxed">
-    This is where the Civit toolkit catalogue will live. Each utility will get its own page under
-    <code class="rounded bg-base-200 px-1">/tools/&lt;tool-name&gt;/</code> and will
-    process your content locally in this browser wherever practical.
+    Each utility gets its own page under <code class="rounded bg-base-200 px-1">/tools/&lt;tool-name&gt;/</code>
+    and processes your content locally in this browser wherever practical. Implemented tools are
+    linked below; planned tools are marked clearly as <strong>not built yet</strong> and are never
+    presented as usable.
   </p>
 
-  <section aria-labelledby="tools-status-heading" class="card mt-8 border border-[var(--civit-border-subtle)] bg-base-200 shadow-sm">
-    <div class="card-body gap-0">
-      <h2 id="tools-status-heading" class="card-title text-xl">Status</h2>
-      <p class="mt-2 leading-relaxed">
-        <strong>No tools are implemented yet.</strong> The project is at the shared-application-shell
-        stage (Phase 1). Tool pages will be added one vertical slice at a time, each with its own
-        tests, as recorded honestly in <code class="rounded bg-base-300 px-1">docs/BUILD_STATUS.md</code>.
-      </p>
-      <ul class="mt-4 list-disc space-y-1 pl-5 text-base-content/70">
-        <li>Planned: a curated collection of browser-side utilities for developers, designers, and digital creators.</li>
-        <li>Not built yet: search, the tool registry, or any individual utility.</li>
+  {publishedTools.length > 0 ? (
+    <section aria-labelledby="tools-available-heading" class="mt-8">
+      <h2 id="tools-available-heading" class="text-xl font-bold">Available now</h2>
+      <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {publishedTools.map((tool) => (
+          <li class="card border border-[var(--civit-border-subtle)] bg-base-200 shadow-sm">
+            <div class="card-body gap-0">
+              <h3 class="card-title text-lg">
+                <a href={toolPath(tool.slug)} class="link link-primary">{tool.name}</a>
+              </h3>
+              <p class="mt-1 text-sm text-base-content/80">{tool.shortDescription}</p>
+              <span class="badge badge-primary badge-soft mt-3 capitalize normal-case">{tool.category}</span>
+            </div>
+          </li>
+        ))}
       </ul>
+    </section>
+  ) : (
+    <section aria-labelledby="tools-status-heading" class="card mt-8 border border-[var(--civit-border-subtle)] bg-base-200 shadow-sm">
+      <div class="card-body gap-0">
+        <h2 id="tools-status-heading" class="card-title text-xl">Status</h2>
+        <p class="mt-2 leading-relaxed"><strong>No tools are implemented yet.</strong></p>
+      </div>
+    </section>
+  )}
+
+
+  <!-- Planned tools: honest listing from the typed catalogue. No links, no routes. -->
+  <section aria-labelledby="tools-planned-heading" class="mt-8">
+    <h2 id="tools-planned-heading" class="text-xl font-bold">Planned — not built yet</h2>
+    <p class="mt-2 text-sm text-base-content/70">
+      These utilities are part of the MVP plan but have no working implementation. They will be
+      added one vertical slice at a time, each with tests, as recorded honestly in
+      <code class="rounded bg-base-300 px-1">docs/BUILD_STATUS.md</code>.
+    </p>
+    <ul class="mt-4 grid gap-4 sm:grid-cols-2">
+      {plannedTools.map((tool) => (
+        <li class="card border border-[var(--civit-border-subtle)] bg-base-200">
+          <div class="card-body gap-0">
+            <h3 class="card-title text-base">{tool.name}</h3>
+            <p class="mt-1 text-sm text-[var(--civit-subtext-1)]">{tool.shortDescription}</p>
+            <span class="badge badge-neutral badge-soft mt-2 normal-case">Planned</span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <!-- Category browsing scaffold with explicit empty states (Prompt 2B rule:
+       categories with no published tools must say so rather than vanish). -->
+  <section aria-labelledby="tools-categories-heading" class="mt-8">
+    <h2 id="tools-categories-heading" class="text-xl font-bold">Categories</h2>
+    <div class="mt-4 flex flex-col gap-4">
+      {TOOL_CATEGORIES.map((cat: ToolCategory) => {
+        const avail = byCategory(publishedTools, cat);
+        const plannedCount = byCategory(plannedTools, cat).length;
+        return (
+          <div class="card border border-[var(--civit-border-subtle)] bg-base-200">
+            <div class="card-body gap-2 p-4">
+              <h3 class="card-title text-base capitalize">{cat}</h3>
+              {avail.length > 0 ? (
+                <ul class="flex flex-wrap gap-2">
+                  {avail.map((t: ToolMetadata) => (
+                    <li><a href={toolPath(t.slug)} class="link link-primary">{t.name}</a></li>
+                  ))}
+                </ul>
+              ) : (
+                <p class="text-sm text-[var(--civit-subtext-1)]">
+                  No published tools in this category yet{plannedCount > 0 ? ` (${plannedCount} planned)` : ''}.
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   </section>
 

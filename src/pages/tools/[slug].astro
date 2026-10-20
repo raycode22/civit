@@ -1,0 +1,51 @@
+---
+// Civit dynamic tool route — Phase 2, Prompt 2B; page chrome moved into the
+// shared ToolLayout in Prompt 2A.
+// Registry-driven: only implemented/published tools get static routes.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import { getToolBySlug, publishedTools } from '../../lib/tools/registry';
+import type { ToolMetadata } from '../../lib/tools/types';
+import JsonFormatter from '../../components/tools/JsonFormatter.svelte';
+import UuidGenerator from '../../components/tools/UuidGenerator.svelte';
+import PasswordGenerator from '../../components/tools/PasswordGenerator.svelte';
+
+// Registry-driven static paths: only implemented/published tools are emitted.
+// Empty registry → zero routes generated (safe: planned tools never look live).
+export function getStaticPaths() {
+  return publishedTools.map((t) => ({ params: { slug: t.slug } }));
+}
+
+const slug = (Astro.params.slug ?? '').toString();
+const tool: ToolMetadata | undefined = getToolBySlug(slug);
+if (!tool || tool.status !== 'implemented') {
+  // Defensive: should not happen given getStaticPaths; render an honest page.
+  Astro.response.status = 404;
+}
+---
+
+{tool ? (
+  <ToolLayout tool={tool}>
+    <!-- Registry-driven dispatch: each implemented slug maps to exactly one
+         hydrated island. New slices add one branch here + one registry entry.
+         client:only because these tools are pure browser utilities with no
+         meaningful server prerender. -->
+    {tool.slug === 'json-formatter' && <JsonFormatter client:only="svelte" />}
+    {tool.slug === 'uuid-generator' && <UuidGenerator client:only="svelte" />}
+    {tool.slug === 'password-generator' && <PasswordGenerator client:only="svelte" />}
+    {tool.slug !== 'json-formatter' && tool.slug !== 'uuid-generator' && tool.slug !== 'password-generator' && (
+      <p>The tool interface for {tool.name} is rendered here by its registered component.</p>
+    )}
+  </ToolLayout>
+) : (
+  <BaseLayout title="Tool not found" description="This tool page does not exist yet.">
+    <h1 class="text-3xl font-bold tracking-tight">Tool not found</h1>
+    <p class="mt-4 text-lg leading-relaxed">
+      This tool is not available. Planned tools intentionally have no pages until they are
+      implemented and tested.
+    </p>
+    <p class="mt-8 text-sm">
+      <a href="/tools/" class="link link-primary">&larr; Back to all tools</a>
+    </p>
+  </BaseLayout>
+)}
