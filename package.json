@@ -1,0 +1,34 @@
+{
+  "name": "civit",
+  "version": "0.0.1",
+  "description": "Local-first, privacy-focused browser toolkit for developers, designers, and digital creators (work in progress).",
+  "type": "module",
+  "private": true,
+  "license": "UNLICENSED",
+  "comment_license": "Private placeholder while the project license decision is outstanding (docs/planning/01-constitution.md Article X). Not a licensing statement.",
+  "engines": {
+    "node": ">=22.22.0 <23"
+  },
+  "packageManager": "pnpm@10.34.7",
+  "scripts": {
+    "dev": "astro dev",
+    "check": "astro check",
+    "test": "vitest run",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.11",
+    "@astrojs/svelte": "^9.1.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.4.1",
+    "daisyui": "^5.7.50",
+    "svelte": "^5.57.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.9.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}

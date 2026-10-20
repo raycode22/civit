@@ -1,0 +1,48 @@
+---
+// Civit landing page — Prompt 1A foundation, now on the shared shell (Prompt 1B).
+// Static HTML; the Svelte islands only verify that the @astrojs/svelte +
+// Svelte 5 integration compiles and hydrates. Honest WIP wording preserved.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ToolkitStatus from '../components/ToolkitStatus.svelte';
+---
+
+<BaseLayout
+  title="Local-first browser toolkit (work in progress)"
+  description="Civit is a work-in-progress, privacy-focused browser toolkit for developers, designers, and digital creators. Utilities run locally in your browser."
+>
+      <p class="text-sm font-semibold uppercase tracking-wide text-base-content/70">
+        Work in progress — foundation scaffold
+      </p>
+      <h1 class="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">Civit</h1>
+      <p class="mt-4 text-lg leading-relaxed">
+        A planned <strong>local-first, privacy-focused browser toolkit</strong> for developers,
+        designers, and digital creators — small, focused utilities that process your text and files
+        in your own browser wherever practical.
+      </p>
+
+      <section aria-labelledby="status-heading" class="card mt-8 border border-[var(--civit-border-subtle)] bg-base-200 shadow-sm">
+        <div class="card-body gap-0"><h2 id="status-heading" class="card-title text-xl">Current status</h2>
+        <p class="mt-2 leading-relaxed">
+          Civit is in the earliest build stage: this page is the first static scaffold. The
+          utilities described in the project plan (JSON formatter, word counter, colour tools, and
+          others) are <strong>planned but not yet implemented</strong>. Nothing on this page sends
+          your data anywhere — there is no backend, no account system, and no analytics.
+        </p>
+        <ul class="mt-4 list-disc space-y-1 pl-5 text-base-content/70">
+          <li>Planned: a curated collection of browser-side utilities.</li>
+          <li>Planned later: installable PWA / offline support, then Docker self-hosting.</li>
+          <li>Not built yet: the tool catalogue, search, or any individual utility.</li>
+        </ul>
+      </div></section>
+
+      <section aria-labelledby="island-heading" class="mt-8">
+        <h2 id="island-heading" class="text-xl font-semibold">Interactive check (Svelte&nbsp;5 island)</h2>
+        <p class="mt-2 text-base-content/70">
+          The control below exists only to verify that interactive components compile and hydrate
+          correctly. Everything it shows is computed locally in your browser.
+        </p>
+        <div class="mt-4">
+          <ToolkitStatus client:load />
+        </div>
+      </section>
+</BaseLayout>
