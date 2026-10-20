@@ -17,7 +17,10 @@ const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}
 /** Minimal structural contract for a random-source object (testable + defensive). */
 export interface RandomSource {
   randomUUID?: () => string;
-  getRandomValues?: <T extends ArrayBufferView>(array: T) => T;
+  // ArrayBufferView<ArrayBuffer> matches the TypeScript DOM lib's Crypto contract
+  // (Exclude<BufferSource, ArrayBuffer>); the broad ArrayBufferView default also
+  // admits SharedArrayBuffer-backed views, which Web Crypto does not accept.
+  getRandomValues?: <T extends ArrayBufferView<ArrayBuffer>>(array: T) => T;
 }
 
 /** The shape this module accepts as "a generator"; kept permissive on purpose. */
