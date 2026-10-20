@@ -85,7 +85,11 @@
   <!-- Accessible status/error region: polite announcements + visible alert -->
   <p class="sr-only" role="status" aria-live="polite">{statusMessage}</p>
   {#if hasError}
+    <!-- Error alert: white on Latte Red = 5.43:1 AA (see style guide §9). -->
     <div class="alert alert-error" role="alert">
+      <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5 shrink-0">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+      </svg>
       <span>{errorText}</span>
     </div>
   {/if}
