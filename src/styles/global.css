@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+
+/* daisyUI 5 — official Astro/Tailwind v4 installation path (daisyui.com/docs/install/astro):
+ * loaded as a Tailwind plugin via CSS `@plugin` syntax. Themes themselves are
+ * defined by Civit in theme.css (@layer theme blocks for catppuccin-latte /
+ * catppuccin-mocha); unrelated built-in daisyUI themes stay disabled. */
+@plugin "daisyui" {
+  themes: false;
+}

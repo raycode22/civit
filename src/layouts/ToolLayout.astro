@@ -1,0 +1,53 @@
+---
+// Shared tool-page layout — Prompt 2A (build guide: "Shared tool-page layout
+// with title, short description, input/workspace region, output/actions
+// region, and a capability/privacy note").
+// Wraps BaseLayout; [slug].astro passes the tool's registered metadata and slot
+// content. Keeps every future vertical slice visually and semantically
+// consistent without duplicating shell markup.
+import BaseLayout from './BaseLayout.astro';
+import type { ToolMetadata } from '../lib/tools/types';
+
+interface Props {
+  /** The registered, implemented tool this page renders. */
+  tool: ToolMetadata;
+}
+
+const { tool } = Astro.props;
+---
+
+<BaseLayout title={tool.name} description={tool.shortDescription}>
+  <article>
+    <header>
+      <h1 class="text-3xl font-bold tracking-tight">{tool.name}</h1>
+      <p class="mt-2 text-lg text-base-content/80">{tool.shortDescription}</p>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <span class="badge badge-primary badge-soft capitalize normal-case">{tool.category}</span>
+        {tool.tags.map((tag) => (
+          <span class="badge badge-neutral badge-soft normal-case">{tag}</span>
+        ))}
+      </div>
+    </header>
+
+    <!-- Input / workspace region -->
+    <section aria-labelledby="workspace-heading" class="card mt-8 border border-[var(--civit-border-subtle)] bg-base-200">
+      <div class="card-body gap-3">
+        <h2 id="workspace-heading" class="sr-only">Workspace</h2>
+        <slot />
+      </div>
+    </section>
+
+    <!-- Capability / privacy note (registry-driven; must stay truthful) -->
+    <aside aria-label="Local processing note" class="alert alert-neutral mt-6">
+      <span>
+        <strong class="font-semibold">Local processing:</strong>
+        {tool.privacyNote}
+        {tool.sizeLimit ? ` Limit: ${tool.sizeLimit}.` : ''}
+      </span>
+    </aside>
+  </article>
+
+  <p class="mt-8 text-sm">
+    <a href="/tools/" class="link link-primary">&larr; Back to all tools</a>
+  </p>
+</BaseLayout>
