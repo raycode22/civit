@@ -40,8 +40,9 @@ function planned(
 }
 
 /**
- * The 11 MVP utilities from the PRD, minus the JSON Formatter (already
- * implemented and registered). All entries are status 'planned'.
+ * The 11 MVP utilities from the PRD, minus tools already implemented and
+ * registered (JSON Formatter in 3A; UUID Generator and Password Generator in
+ * 3B). All entries here are status 'planned'.
  */
 export const plannedTools: readonly ToolMetadata[] = [
   planned('word-counter', 'Word Counter', 'Count words, characters, and reading time for pasted text.', 'text', ['character count', 'reading time']),
@@ -50,7 +51,6 @@ export const plannedTools: readonly ToolMetadata[] = [
   planned('slug-generator', 'Slug Generator', 'Turn titles into URL-safe slugs.', 'text', ['url slug', 'permalink']),
   planned('base64-tool', 'Base64 Encoder/Decoder', 'Encode text to Base64 or decode Base64 back to text.', 'developer', ['b64', 'encode', 'decode']),
   planned('hash-generator', 'Hash Generator', 'Compute common hashes (e.g. SHA-256) for text using browser crypto APIs.', 'developer', ['sha256', 'checksum', 'digest']),
-  planned('uuid-generator', 'UUID Generator', 'Create random UUIDs locally via crypto.randomUUID.', 'developer', ['guid', 'unique id']),
   planned('color-picker', 'Color Picker', 'Pick colors and inspect hex/rgb/hsl values locally.', 'design', ['hex', 'rgb', 'hsl']),
   planned('contrast-checker', 'Contrast Checker', 'Check foreground/background contrast ratios against WCAG thresholds.', 'design', ['wcag', 'accessibility', 'a11y']),
   planned('gradient-generator', 'Gradient Generator', 'Build CSS gradients with live preview and copyable code.', 'design', ['css gradient', 'linear-gradient']),

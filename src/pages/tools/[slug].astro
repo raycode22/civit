@@ -7,6 +7,8 @@ import ToolLayout from '../../layouts/ToolLayout.astro';
 import { getToolBySlug, publishedTools } from '../../lib/tools/registry';
 import type { ToolMetadata } from '../../lib/tools/types';
 import JsonFormatter from '../../components/tools/JsonFormatter.svelte';
+import UuidGenerator from '../../components/tools/UuidGenerator.svelte';
+import PasswordGenerator from '../../components/tools/PasswordGenerator.svelte';
 
 // Registry-driven static paths: only implemented/published tools are emitted.
 // Empty registry → zero routes generated (safe: planned tools never look live).
@@ -29,7 +31,9 @@ if (!tool || tool.status !== 'implemented') {
          client:only because these tools are pure browser utilities with no
          meaningful server prerender. -->
     {tool.slug === 'json-formatter' && <JsonFormatter client:only="svelte" />}
-    {tool.slug !== 'json-formatter' && (
+    {tool.slug === 'uuid-generator' && <UuidGenerator client:only="svelte" />}
+    {tool.slug === 'password-generator' && <PasswordGenerator client:only="svelte" />}
+    {tool.slug !== 'json-formatter' && tool.slug !== 'uuid-generator' && tool.slug !== 'password-generator' && (
       <p>The tool interface for {tool.name} is rendered here by its registered component.</p>
     )}
   </ToolLayout>
