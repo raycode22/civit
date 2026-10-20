@@ -1,8 +1,8 @@
 # ADR 0001 — Static-first deployment on Cloudflare Pages
 
-**Status:** Accepted (planning baseline; recorded before implementation per Phase 0 of `docs/08-qwen-coder-build-guide.md`)
+**Status:** Accepted (planning baseline; recorded before implementation per Phase 0 of `docs/planning/08-qwen-coder-build-guide.md`)
 **Date:** 2026-10-20
-**Deciders:** Civit project owner (plan derived from `docs/01-constitution.md` Article IV, `docs/03-technical-implementation-plan.md`, `docs/04-online-deployment-plan.md`, `docs/07-research-and-stack-validation.md`)
+**Deciders:** Civit project owner (plan derived from `docs/planning/01-constitution.md` Article IV, `docs/planning/03-technical-implementation-plan.md`, `docs/planning/04-online-deployment-plan.md`, `docs/planning/07-research-and-stack-validation.md`)
 **Related:** `AGENTS.md`, `docs/BUILD_STATUS.md`
 
 ## Context
