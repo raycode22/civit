@@ -63,7 +63,8 @@ const currentPath = Astro.url.pathname.replace(/\/index\.html$/, '/');
         </nav>
         <span class="ml-auto"><ThemeToggle client:load /></span>
       </div>
-      <!-- Mobile navigation row (kept simple; full menu patterns arrive with tools) -->
+      <!-- Mobile navigation row: plain links with padding for a comfortable
+           touch target; active state uses aria-current + weight, not colour alone. -->
       <nav aria-label="Main (mobile)" class="border-t border-[var(--civit-border-subtle)] pb-2 sm:hidden">
         <ul class="mx-auto flex max-w-3xl gap-4 px-4 pt-2 text-sm">
           {navLinks.map((link) => (
@@ -72,8 +73,10 @@ const currentPath = Astro.url.pathname.replace(/\/index\.html$/, '/');
                 href={link.href}
                 aria-current={currentPath === link.href ? 'page' : undefined}
                 class:list={[
-                  'badge badge-neutral-content/0 gap-1 px-2 normal-case',
-                  currentPath === link.href ? 'border-primary font-semibold text-primary' : 'text-[var(--civit-subtext-1)]',
+                  'rounded px-2 py-1 underline-offset-4 hover:underline',
+                  currentPath === link.href
+                    ? 'font-semibold text-primary'
+                    : 'text-[var(--civit-subtext-1)]',
                 ]}>{link.label}</a
               >
             </li>

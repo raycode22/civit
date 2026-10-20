@@ -1,9 +1,9 @@
 ---
-// Civit dynamic tool route — Phase 2, Prompt 2B.
+// Civit dynamic tool route — Phase 2, Prompt 2B; page chrome moved into the
+// shared ToolLayout in Prompt 2A.
 // Registry-driven: only implemented/published tools get static routes.
-// While the registry has no implemented tools, getStaticPaths returns [] and
-// Astro emits zero /tools/<slug>/ pages — planned tools never appear as working.
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ToolLayout from '../../layouts/ToolLayout.astro';
 import { getToolBySlug, publishedTools } from '../../lib/tools/registry';
 import type { ToolMetadata } from '../../lib/tools/types';
 import JsonFormatter from '../../components/tools/JsonFormatter.svelte';
@@ -18,41 +18,30 @@ const slug = (Astro.params.slug ?? '').toString();
 const tool: ToolMetadata | undefined = getToolBySlug(slug);
 if (!tool || tool.status !== 'implemented') {
   // Defensive: should not happen given getStaticPaths; render an honest page.
-  // Astro's static-output API for setting status is the `transition`-free
-  // Response via `Astro.response` — use the documented status assignment instead.
   Astro.response.status = 404;
 }
 ---
 
-<BaseLayout
-  title={tool ? tool.name : 'Tool not found'}
-  description={tool ? tool.shortDescription : 'This tool page does not exist yet.'}
->
-  {tool ? (
-    <article>
-      <header>
-        <h1 class="text-3xl font-bold tracking-tight">{tool.name}</h1>
-        <p class="mt-2 text-lg text-base-content/80">{tool.shortDescription}</p>
-      </header>
-      <section aria-label="Tool workspace" class="card mt-8 border border-[var(--civit-border-subtle)] bg-base-200">
-        <div class="card-body">
-          <!-- Registry-driven dispatch: each implemented slug maps to exactly one
-               hydrated island. New slices add one branch here + one registry entry.
-               client:only because these tools are pure browser utilities with no
-               meaningful server prerender. -->
-          {tool.slug === 'json-formatter' && <JsonFormatter client:only="svelte" />}
-          {tool.slug !== 'json-formatter' && (
-            <p>The tool interface for {tool.name} is rendered here by its registered component.</p>
-          )}
-        </div>
-      </section>
-      <p class="privacy-note mt-6 text-sm text-base-content/70">{tool.privacyNote}</p>
-    </article>
-  ) : (
+{tool ? (
+  <ToolLayout tool={tool}>
+    <!-- Registry-driven dispatch: each implemented slug maps to exactly one
+         hydrated island. New slices add one branch here + one registry entry.
+         client:only because these tools are pure browser utilities with no
+         meaningful server prerender. -->
+    {tool.slug === 'json-formatter' && <JsonFormatter client:only="svelte" />}
+    {tool.slug !== 'json-formatter' && (
+      <p>The tool interface for {tool.name} is rendered here by its registered component.</p>
+    )}
+  </ToolLayout>
+) : (
+  <BaseLayout title="Tool not found" description="This tool page does not exist yet.">
     <h1 class="text-3xl font-bold tracking-tight">Tool not found</h1>
-  )}
-
-  <p class="mt-8 text-sm">
-    <a href="/tools/" class="link link-primary">← Back to all tools</a>
-  </p>
-</BaseLayout>
+    <p class="mt-4 text-lg leading-relaxed">
+      This tool is not available. Planned tools intentionally have no pages until they are
+      implemented and tested.
+    </p>
+    <p class="mt-8 text-sm">
+      <a href="/tools/" class="link link-primary">&larr; Back to all tools</a>
+    </p>
+  </BaseLayout>
+)}
