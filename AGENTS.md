@@ -8,17 +8,18 @@ Civit is a privacy-first, local-first browser utility suite: a coherent collecti
 
 ## Source of truth — read before changing anything
 
-The committed planning pack in `docs/` (referred to in some prompts as `docs/planning/`) is the project baseline. **Read the relevant documents before any architectural change:**
+The committed planning pack in `docs/planning/` is the project baseline. **Read the relevant documents before any architectural change:**
 
-- `docs/01-constitution.md` — non-negotiable product/engineering rules; resolve conflicts against it first. Its decision hierarchy: 1) user privacy & security, 2) correctness & preservation of user files, 3) accessibility & error recovery, 4) offline honesty & portability, 5) performance & maintainability, 6) feature breadth & polish.
-- `docs/02-prd.md` — MVP scope (curated small-tool set), personas, requirements, acceptance criteria.
-- `docs/03-technical-implementation-plan.md` — architecture table, repo layout, registry contract, engine/worker policy, dependency policy, stage gates.
-- `docs/04-online-deployment-plan.md` — Cloudflare Pages static deployment, `_headers`, 25 MiB per-asset limit, R2 for large assets.
-- `docs/05-offline-pwa-plan.md` — PWA stages, cache policy, offline capability tiers, testing matrix.
-- `docs/06-docker-build-plan.md` — multi-stage build, non-root Nginx runtime, core vs offline image variants.
-- `docs/07-research-and-stack-validation.md` — verified platform constraints and corrections to the source research.
-- `docs/08-qwen-coder-build-guide.md` — phased execution prompts and checkpoints.
-- `docs/how_to_use_this.md` — reading order, stage gates, definition of done for a tool.
+- `docs/planning/01-constitution.md` — non-negotiable product/engineering rules; resolve conflicts against it first. Its decision hierarchy: 1) user privacy & security, 2) correctness & preservation of user files, 3) accessibility & error recovery, 4) offline honesty & portability, 5) performance & maintainability, 6) feature breadth & polish.
+- `docs/planning/02-prd.md` — MVP scope (curated small-tool set), personas, requirements, acceptance criteria.
+- `docs/planning/03-technical-implementation-plan.md` — architecture table, repo layout, registry contract, engine/worker policy, dependency policy, stage gates.
+- `docs/planning/04-online-deployment-plan.md` — Cloudflare Pages static deployment, `_headers`, 25 MiB per-asset limit, R2 for large assets.
+- `docs/planning/05-offline-pwa-plan.md` — PWA stages, cache policy, offline capability tiers, testing matrix.
+- `docs/planning/06-docker-build-plan.md` — multi-stage build, non-root Nginx runtime, core vs offline image variants.
+- `docs/planning/07-research-and-stack-validation.md` — verified platform constraints and corrections to the source research.
+- `docs/planning/08-qwen-coder-build-guide.md` — phased execution prompts and checkpoints.
+- `docs/planning/how_to_use_this.md` — reading order, stage gates, definition of done for a tool.
+- `docs/planning/README.md` — planning-pack index.
 - `docs/BUILD_STATUS.md` — current roadmap phase status (update when a phase's acceptance criteria actually pass).
 - `docs/decisions/` — architecture decision records for costly-to-reverse choices.
 
@@ -57,7 +58,7 @@ These documents are plans, not evidence that code exists or tests passed. Never 
 
 ## Staged roadmap (one scoped task at a time)
 
-Foundation → application shell + typed tool registry → lightweight tool vertical slices → test/harden → Cloudflare Pages deployment → online MVP release gate → PWA/offline → optional heavy offline engines (R2) → Docker → later expansion. Start a stage only when the previous stage's exit gate passes (see `docs/how_to_use_this.md` and each plan's gates). Build **complete vertical slices** (UI + engine + validation + tests + registry entry + docs) — never create empty placeholder routes. A planned tool must not appear in production navigation as if it works.
+Foundation → application shell + typed tool registry → lightweight tool vertical slices → test/harden → Cloudflare Pages deployment → online MVP release gate → PWA/offline → optional heavy offline engines (R2) → Docker → later expansion. Start a stage only when the previous stage's exit gate passes (see `docs/planning/how_to_use_this.md` and each plan's gates). Build **complete vertical slices** (UI + engine + validation + tests + registry entry + docs) — never create empty placeholder routes. A planned tool must not appear in production navigation as if it works.
 
 ## Commands that should exist once the app is configured (Phase 1+)
 
@@ -78,7 +79,7 @@ No application API, server adapter, database, auth, telemetry, or upload backend
 ## Tests-before-completion policy
 
 - Every meaningful change runs the relevant checks; every PR gate includes: frozen install, lint/format, type/Astro/Svelte checks, unit tests, production static build, registry/route validation, dependency/secret scans, browser tests for changed critical flows.
-- A tool is done only per the definition of done in `docs/how_to_use_this.md`: documented I/O limits, validated edge cases, local-only processing, accessible controls, unit + browser tests, verified in a production build, accurate offline labeling.
+- A tool is done only per the definition of done in `docs/planning/how_to_use_this.md`: documented I/O limits, validated edge cases, local-only processing, accessible controls, unit + browser tests, verified in a production build, accurate offline labeling.
 - **Never claim a test or command passed if you did not execute it.** If the environment cannot run a command, state "not run" and give the exact command that will verify it. Never invent test results, benchmarks, bundle sizes, or deployment status.
 - If a task breaks the build, fix that before adding more work. Keep `main` buildable; make the smallest complete change; avoid unrelated refactors; commit one scoped task per checkpoint.
 - Never paste API keys, tokens, passwords, or private credentials into prompts or repository files.
