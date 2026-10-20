@@ -1,0 +1,53 @@
+/* Civit theme tokens — Prompt 1B shared shell.
+ *
+ * Design contract:
+ *   - Tokens are resolved via [data-theme] on <html>, set BEFORE first paint by
+ *     an inline script (src/lib/theme/theme.ts → PREPAINT_SCRIPT).
+ *   - An explicit user choice (persisted in localStorage under
+ *     "civit-theme-preference") always wins over the OS preference.
+ *   - Fallback order if the attribute is missing entirely: OS light → light,
+ *     otherwise dark (the project default).
+ *   - Text tokens were contrast-checked against their backgrounds with a WCAG
+ *     relative-luminance calculation (measured; see docs/BUILD_STATUS.md):
+ *     dark bg #0f1115 -> text 15.7:1, muted 7.3:1, accent 9.7:1;
+ *     light bg #f7f8fa -> text 15.5:1, muted 6.2:1, accent 5.6:1.
+ *   - Decorative surface/border tokens are low-contrast BY DESIGN (not used
+ *     for text); focus visibility relies on the accent-coloured outline.
+ */
+
+:root,
+[data-theme='dark'] {
+  --civit-bg: #0f1115;
+  --civit-surface: #171a21;
+  --civit-text: #e8eaee;      /* 15.7:1 on bg  */
+  --civit-muted: #9aa1ad;     /*  7.3:1 on bg  */
+  --civit-border: #2a2f3a;
+  --civit-accent: #79c0ff;    /*  9.7:1 on bg; used as link/focus color */
+  --civit-focus: var(--civit-accent);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --civit-bg: #f7f8fa;
+    --civit-surface: #ffffff;
+    --civit-text: #1b1f27;    /* 15.5:1 on bg */
+    --civit-muted: #565e6b;   /*  6.2:1 on bg */
+    --civit-border: #d7dbe2;
+    --civit-accent: #0b62be;  /*  5.6:1 on bg */
+  }
+}
+
+[data-theme='light'] {
+  --civit-bg: #f7f8fa;
+  --civit-surface: #ffffff;
+  --civit-text: #1b1f27;
+  --civit-muted: #565e6b;
+  --civit-border: #d7dbe2;
+  --civit-accent: #0b62be;
+}
+
+/* Visible focus everywhere, not colour-only. */
+:focus-visible {
+  outline: 2px solid var(--civit-focus);
+  outline-offset: 2px;
+}

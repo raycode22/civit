@@ -4,7 +4,7 @@
 
 Utilities are intended to perform processing locally in the user's browser wherever practical, particularly when handling user-provided files or sensitive content. The application aims to minimize unnecessary data transmission and avoid requiring an application backend for tools that can run entirely on the client.
 
-> **Status: early foundation scaffold (Phase 1 / Prompt 1A).** A minimal buildable Astro site with one verification island now exists, but Civit is *not* yet functional as a product: no tools, navigation, search, offline support, or deployment exist. Civit is not installable, offline-capable, production-ready, or feature-equivalent to Delphi.tools. See [Development status](#8-development-status-and-contribution-expectations) and [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md).
+> **Status: application shell in progress (Phase 1 / Prompt 1B).** A minimal buildable Astro site with a shared layout, light/dark theme system, and a `/tools/` placeholder route now exists, but Civit is *not* yet functional as a product: no tools, search, registry, offline support, or deployment exist. Civit is not installable, offline-capable, production-ready, or feature-equivalent to Delphi.tools. See [Development status](#8-development-status-and-contribution-expectations) and [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md).
 
 Intended users: developers, designers, and digital creators who want small, focused utilities (text, developer, colour, image, document, media work) without creating accounts or uploading their content to someone else's server. The problem it addresses: everyday utilities are either scattered across ad-laden single-purpose sites or require installing heavyweight software; Civit aims to be one trustworthy app where your files stay on your machine.
 
@@ -62,7 +62,7 @@ Product and engineering rules live in [`docs/planning/01-constitution.md`](docs/
 
 ## 5. Repository structure
 
-Actual contents at the time of writing (Phase 1 / Prompt 1A — foundation scaffold; the application shell, registry, and tools arrive in later phases):
+Actual contents at the time of writing (Phase 1 / Prompt 1B — shared shell landed; registry and tools arrive in later phases):
 
 ```
 .
@@ -78,12 +78,19 @@ Actual contents at the time of writing (Phase 1 / Prompt 1A — foundation scaff
 ├── tsconfig.json              # extends astro/tsconfigs/strict
 ├── vitest.config.ts           # unit tests (node environment, tests/**)
 ├── src/
-│   ├── pages/index.astro      # Civit landing page (work-in-progress messaging)
+│   ├── layouts/BaseLayout.astro       # Shared shell: landmarks, skip link, nav, footer, theme wiring
+│   ├── pages/index.astro              # Civit landing page (work-in-progress messaging)
+│   ├── pages/tools/index.astro        # Honest /tools/ placeholder (no fake tools)
 │   ├── components/ToolkitStatus.svelte  # Svelte 5 runes island (integration check only)
-│   ├── lib/text/wordCount.ts  # tiny pure engine used by the island
-│   └── styles/global.css      # Tailwind v4 import + design-token CSS variables
+│   ├── components/ThemeToggle.svelte    # Svelte 5 light/dark toggle island
+│   ├── lib/text/wordCount.ts          # tiny pure engine used by the island
+│   ├── lib/theme/theme.ts             # pure theme resolution/persistence + pre-paint script source
+│   └── styles/
+│       ├── global.css                 # Tailwind v4 import + base tokens
+│       └── theme.css                  # documented light/dark CSS-variable tokens
 ├── tests/
-│   └── wordCount.test.ts      # Vitest unit tests
+│   ├── wordCount.test.ts      # Vitest unit tests
+│   └── theme.test.ts          # theme resolution/persistence unit tests
 └── docs/
     ├── BUILD_STATUS.md        # Honest, evidence-backed phase status tracker
     ├── decisions/
@@ -95,7 +102,7 @@ Actual contents at the time of writing (Phase 1 / Prompt 1A — foundation scaff
 ```
 
 - **Root** holds project-level documentation (`README.md`, `AGENTS.md`) and the application scaffold configuration.
-- **`src/`** is the beginning of the application described in `docs/planning/03-technical-implementation-plan.md`; directories like `src/tools/`, layouts, and the registry do **not** exist yet and must not be assumed.
+- **`src/`** is the beginning of the application described in `docs/planning/03-technical-implementation-plan.md`; the shared layout, theme system, and tool-route placeholder exist, but `src/tools/` and the typed registry do **not** exist yet and must not be assumed.
 - **`tests/`** currently holds only the foundation unit test; browser/e2e suites arrive with later phases.
 - **`docs/planning/`** is the canonical location for the planning pack — product principles, PRD, technical plan, deployment/PWA/Docker plans, stack validation, and the phased build guide. These are *plans*, not evidence that code exists.
 - **`docs/decisions/`** holds architecture decision records (ADRs) for costly-to-reverse choices.
@@ -105,7 +112,7 @@ Actual contents at the time of writing (Phase 1 / Prompt 1A — foundation scaff
 
 **Prerequisites:** Node.js 22.22.0+ (see `.nvmrc`) and pnpm 10 (the `packageManager` field pins `pnpm@10.34.7`; enable it with Corepack or install it directly).
 
-Verified commands (all executed successfully on Node 22.22.0 / pnpm 10.34.7 during Prompt 1A):
+Verified commands (re-run successfully on Node 22.22.0 / pnpm 10.34.7 during Prompt 1B; see the BUILD_STATUS verification log for exact results):
 
 ```bash
 pnpm install --frozen-lockfile   # reproducible install from the committed lockfile
@@ -116,7 +123,7 @@ pnpm build                       # astro check && astro build → static dist/
 pnpm preview                     # serve the built dist/ locally to verify output
 ```
 
-What exists today is only the foundation: a static landing page and one interactive verification island. There are no usable end-user tools yet — see [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) and the roadmap above. For the staged workflow, read [`docs/planning/how_to_use_this.md`](docs/planning/how_to_use_this.md) and execute [`docs/planning/08-qwen-coder-build-guide.md`](docs/planning/08-qwen-coder-build-guide.md) one scoped prompt at a time (next up: Prompt 1B).
+What exists today is the foundation plus the shared shell: two static pages (home and `/tools/` placeholder), a theme system, and two small interactive islands. There are no usable end-user tools yet — see [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) and the roadmap above. For the staged workflow, read [`docs/planning/how_to_use_this.md`](docs/planning/how_to_use_this.md) and execute [`docs/planning/08-qwen-coder-build-guide.md`](docs/planning/08-qwen-coder-build-guide.md) one scoped prompt at a time (next up after review: Prompt 1C / Phase 2).
 
 ## 7. License
 
@@ -124,7 +131,7 @@ What exists today is only the foundation: a static landing page and one interact
 
 ## 8. Development status and contribution expectations
 
-Per [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md): **Phase 0 (planning pack, agent instructions, ADR, status tracker, repository organization, and this README) is complete.** In Phase 1, **Prompt 1A (foundation scaffold) is implemented and locally verified** — `pnpm check`, `pnpm test` (3/3), `pnpm build` (static output), and `pnpm preview` all passed on Node 22.22.0 / pnpm 10.34.7 — and is awaiting review/checkpoint; it is not the whole of Phase 1. **Prompt 1B (CI workflow, lint/format tooling) and Phases 2–10 have not started.** No tools, navigation/registry, deployment, PWA, or Docker artifact exists. Do not describe Civit as functional, offline-capable, or production-ready.
+Per [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md): **Phase 0 (planning pack, agent instructions, ADR, status tracker, repository organization, and this README) is complete.** In Phase 1, **Prompt 1A (foundation scaffold) is committed** (`5827faa`) and **Prompt 1B (shared application shell, theme system, `/tools/` placeholder) is implemented and locally verified** — `pnpm check` (0 errors/warnings/hints), `pnpm test` (11/11 across 2 files), and `pnpm build` (static, 2 pages incl. `dist/tools/index.html`) all passed on Node 22.22.0 / pnpm 10.34.7 — and is awaiting review/checkpoint; browser-dependent behavior (toggle clicks, reload persistence, flash-of-wrong-theme) has **not** been tested in a real browser. Neither prompt means Phase 1 is complete, and **Phases 2–10 have not started**: no tools, registry/search, deployment, PWA, or Docker artifact exists. Do not describe Civit as functional, offline-capable, or production-ready. Do not describe Civit as functional, offline-capable, or production-ready.
 
 Expectations for contributors and AI coding agents (full detail in [`AGENTS.md`](AGENTS.md)):
 
