@@ -1,28 +1,9 @@
 @import 'tailwindcss';
 
-/* Civit design tokens (minimal set for Prompt 1A; full theme arrives in Phase 2). */
-:root {
-  --civit-bg: #0f1115;
-  --civit-surface: #171a21;
-  --civit-text: #e8eaee;
-  --civit-muted: #9aa1ad;
-  --civit-border: #2a2f3a;
-  --civit-accent: #79c0ff;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --civit-bg: #f7f8fa;
-    --civit-surface: #ffffff;
-    --civit-text: #1b1f27;
-    --civit-muted: #565e6b;
-    --civit-border: #d7dbe2;
-    --civit-accent: #0b62be;
-  }
-}
-
-/* Visible focus everywhere, not colour-only. */
-:focus-visible {
-  outline: 2px solid var(--civit-accent);
-  outline-offset: 2px;
+/* daisyUI 5 — official Astro/Tailwind v4 installation path (daisyui.com/docs/install/astro):
+ * loaded as a Tailwind plugin via CSS `@plugin` syntax. Themes themselves are
+ * defined by Civit in theme.css (@layer theme blocks for catppuccin-latte /
+ * catppuccin-mocha); unrelated built-in daisyUI themes stay disabled. */
+@plugin "daisyui" {
+  themes: false;
 }

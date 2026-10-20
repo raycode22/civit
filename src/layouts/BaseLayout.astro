@@ -1,9 +1,9 @@
 ---
-// Civit shared application shell — Prompt 1B.
-// Semantic landmarks, skip link, responsive nav placeholders, theme system.
+// Civit shared application shell — Prompt 1B (Catppuccin + daisyUI revision).
+// Semantic landmarks, skip link, responsive nav, theme system.
 // Static-only: no analytics, no remote requests, no accounts (Constitution).
-import '../styles/global.css';
-import '../styles/theme.css';
+import '../styles/global.css'; // Tailwind v4 + daisyUI plugin
+import '../styles/theme.css'; // catppuccin-latte / catppuccin-mocha themes
 import ThemeToggle from '../components/ThemeToggle.svelte';
 import { PREPAINT_SCRIPT } from '../lib/theme/theme';
 
@@ -30,20 +30,20 @@ const currentPath = Astro.url.pathname.replace(/\/index\.html$/, '/');
     <title>{title} — Civit</title>
     <meta name="description" content={description} />
     <!-- No analytics, no telemetry, no external fonts, no runtime CDN requests. -->
-    <!-- Apply stored/OS theme before first paint (no flash of wrong theme). -->
+    <!-- Apply stored/OS theme (Catppuccin Latte/Mocha) before first paint. -->
     <script is:inline define:vars={{ script: PREPAINT_SCRIPT }}>{script}</script>
   </head>
-  <body class="flex min-h-screen flex-col bg-[var(--civit-bg)] text-[var(--civit-text)] antialiased">
+  <body class="flex min-h-screen flex-col bg-base-100 text-base-content antialiased">
     <a
       href="#main"
-      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded focus:bg-[var(--civit-accent)] focus:px-3 focus:py-2 focus:text-[var(--civit-bg)]"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-content"
       >Skip to main content</a
     >
 
-    <header class="border-b border-[var(--civit-border)] bg-[var(--civit-surface)]">
-      <div class="mx-auto flex max-w-3xl flex-wrap items-center gap-x-6 gap-y-2 px-6 py-4">
-        <a href="/" class="text-lg font-bold tracking-tight">Civit</a>
-        <nav aria-label="Main" class="order-last w-full sm:order-none sm:w-auto">
+    <header class="border-b border-[var(--civit-border-subtle)] bg-base-200">
+      <div class="navbar mx-auto max-w-3xl px-4 sm:px-6">
+        <a href="/" class="text-lg font-bold tracking-tight normal-case">Civit</a>
+        <nav aria-label="Main" class="hidden sm:ml-6 sm:block">
           <ul class="flex gap-4 text-sm">
             {navLinks.map((link) => (
               <li>
@@ -52,7 +52,9 @@ const currentPath = Astro.url.pathname.replace(/\/index\.html$/, '/');
                   aria-current={currentPath === link.href ? 'page' : undefined}
                   class:list={[
                     'rounded px-1 py-0.5 underline-offset-4 hover:underline',
-                    currentPath === link.href ? 'font-semibold text-[var(--civit-accent)]' : 'text-[var(--civit-muted)]',
+                    currentPath === link.href
+                      ? 'font-semibold text-primary'
+                      : 'text-[var(--civit-subtext-1)]',
                   ]}>{link.label}</a
                 >
               </li>
@@ -61,21 +63,40 @@ const currentPath = Astro.url.pathname.replace(/\/index\.html$/, '/');
         </nav>
         <span class="ml-auto"><ThemeToggle client:load /></span>
       </div>
+      <!-- Mobile navigation row (kept simple; full menu patterns arrive with tools) -->
+      <nav aria-label="Main (mobile)" class="border-t border-[var(--civit-border-subtle)] pb-2 sm:hidden">
+        <ul class="mx-auto flex max-w-3xl gap-4 px-4 pt-2 text-sm">
+          {navLinks.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                aria-current={currentPath === link.href ? 'page' : undefined}
+                class:list={[
+                  'badge badge-neutral-content/0 gap-1 px-2 normal-case',
+                  currentPath === link.href ? 'border-primary font-semibold text-primary' : 'text-[var(--civit-subtext-1)]',
+                ]}>{link.label}</a
+              >
+            </li>
+          ))}
+        </ul>
+      </nav>
     </header>
 
-    <main id="main" class="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+    <main id="main" class="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
       <slot />
     </main>
 
-    <footer class="border-t border-[var(--civit-border)] bg-[var(--civit-surface)]">
-      <div class="mx-auto max-w-3xl px-6 py-6 text-sm text-[var(--civit-muted)]">
+    <footer class="border-t border-[var(--civit-border-subtle)] bg-base-200">
+      <div class="mx-auto max-w-3xl px-4 py-6 text-sm text-[var(--civit-subtext-1)] sm:px-6">
         <p>
-          Built with Astro (static output), Svelte 5, TypeScript, and Tailwind CSS v4.
+          Built with Astro (static output), Svelte 5, TypeScript, Tailwind CSS v4, and
+          <a href="https://daisyui.com/" class="link link-primary">daisyUI</a> styled with the
+          <a href="https://catppuccin.com/" class="link link-primary">Catppuccin</a> palette.
           Everything runs locally in your browser — no backend, no analytics.
         </p>
         <p class="mt-2">
           Honest phase status lives in
-          <code class="rounded bg-[var(--civit-bg)] px-1">docs/BUILD_STATUS.md</code> in the
+          <code class="rounded bg-base-300 px-1">docs/BUILD_STATUS.md</code> in the
           repository. This project is a work in progress.
         </p>
       </div>

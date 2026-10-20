@@ -63,18 +63,33 @@ export function nextPreference(current: Theme): Theme {
 }
 
 /**
- * Attribute consumed by theme.css. Kept in one place so the inline pre-paint
- * script, the Svelte island, and the stylesheet cannot drift apart.
+ * Attribute consumed by theme.css / daisyUI. Kept in one place so the inline
+ * pre-paint script, the Svelte island, and the stylesheet cannot drift apart.
  * Applied on <html> before first paint to avoid a flash of the wrong theme.
  */
 export const THEME_ATTRIBUTE = 'data-theme';
 
+/** Catppuccin flavor backing each light/dark choice (docs/design/catppuccin-style-guide.md). */
+export const DAISY_THEME: Record<Theme, string> = {
+  light: 'catppuccin-latte',
+  dark: 'catppuccin-mocha',
+};
+
+/** Map a raw data-theme value back to a light/dark choice (null if unknown). */
+export function themeFromDaisyName(value: string | null): Theme | null {
+  if (value === DAISY_THEME.light) return 'light';
+  if (value === DAISY_THEME.dark) return 'dark';
+  return null;
+}
+
 export function applyThemeAttribute(target: { setAttribute(name: string, value: string): void }, theme: Theme): void {
-  target.setAttribute(THEME_ATTRIBUTE, theme);
+  // daisyUI selects its palette via data-theme="<theme-name>", so we write the
+  // Catppuccin flavor name rather than the bare light/dark keyword.
+  target.setAttribute(THEME_ATTRIBUTE, DAISY_THEME[theme]);
 }
 
 /**
  * Source for the tiny inline <script> that sets the theme before first paint.
  * Self-contained, defensive (never throws), local-only (no requests).
  */
-export const PREPAINT_SCRIPT = `(function(){try{var d=document,k="${THEME_STORAGE_KEY}",v=null;try{v=localStorage.getItem(k)}catch(e){}var s=(window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";d.documentElement.setAttribute("${THEME_ATTRIBUTE}",(v==="light"||v==="dark")?v:s);}catch(e){}})();`;
+export const PREPAINT_SCRIPT = `(function(){try{var d=document,k="${THEME_STORAGE_KEY}",a="${THEME_ATTRIBUTE}",m={"light":"${DAISY_THEME.light}","dark":"${DAISY_THEME.dark}"},v=null;try{v=localStorage.getItem(k)}catch(e){}var s=(v==="light"||v==="dark")?v:((window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light");d.documentElement.setAttribute(a,m[s]);}catch(e){}})();`;

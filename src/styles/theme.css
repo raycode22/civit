@@ -1,53 +1,137 @@
-/* Civit theme tokens — Prompt 1B shared shell.
+/* ============================================================================
+ * Civit theme system — Catppuccin Latte (light) / Catppuccin Mocha (dark),
+ * implemented as custom daisyUI 5 themes. See docs/design/catppuccin-style-guide.md.
  *
  * Design contract:
- *   - Tokens are resolved via [data-theme] on <html>, set BEFORE first paint by
- *     an inline script (src/lib/theme/theme.ts → PREPAINT_SCRIPT).
- *   - An explicit user choice (persisted in localStorage under
- *     "civit-theme-preference") always wins over the OS preference.
- *   - Fallback order if the attribute is missing entirely: OS light → light,
- *     otherwise dark (the project default).
- *   - Text tokens were contrast-checked against their backgrounds with a WCAG
- *     relative-luminance calculation (measured; see docs/BUILD_STATUS.md):
- *     dark bg #0f1115 -> text 15.7:1, muted 7.3:1, accent 9.7:1;
- *     light bg #f7f8fa -> text 15.5:1, muted 6.2:1, accent 5.6:1.
- *   - Decorative surface/border tokens are low-contrast BY DESIGN (not used
- *     for text); focus visibility relies on the accent-coloured outline.
- */
+ *   - The active theme is selected via `data-theme` on <html>, set BEFORE first
+ *     paint by an inline script (src/lib/theme/theme.ts -> PREPAINT_SCRIPT).
+ *   - daisyUI resolves semantic variables (--color-base-100 etc.) per theme;
+ *     Tailwind utilities (`bg-base-100`, `text-base-content`, ...) consume them.
+ *   - Civit-specific tokens below exist only for roles daisyUI does not cover
+ *     (full palette reference + the two surface layers beyond base-100/200/300).
+ *   - All foreground/background pairings used for text were contrast-checked
+ *     with a WCAG relative-luminance calculation; results are recorded in
+ *     docs/BUILD_STATUS.md and the style guide.
+ * ==========================================================================*/
 
-:root,
-[data-theme='dark'] {
-  --civit-bg: #0f1115;
-  --civit-surface: #171a21;
-  --civit-text: #e8eaee;      /* 15.7:1 on bg  */
-  --civit-muted: #9aa1ad;     /*  7.3:1 on bg  */
-  --civit-border: #2a2f3a;
-  --civit-accent: #79c0ff;    /*  9.7:1 on bg; used as link/focus color */
-  --civit-focus: var(--civit-accent);
-}
+@layer theme {
+  /* Light theme — Catppuccin Latte. Default when no data-theme is present. */
+  :root,
+  [data-theme='catppuccin-latte'] {
+    color-scheme: light;
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme]) {
-    --civit-bg: #f7f8fa;
-    --civit-surface: #ffffff;
-    --civit-text: #1b1f27;    /* 15.5:1 on bg */
-    --civit-muted: #565e6b;   /*  6.2:1 on bg */
-    --civit-border: #d7dbe2;
-    --civit-accent: #0b62be;  /*  5.6:1 on bg */
+    /* Surfaces (Catppuccin background roles) */
+    --color-base-100: #eff1f5; /* Base   - page background        */
+    --color-base-200: #e6e9ef; /* Mantle - secondary surfaces     */
+    --color-base-300: #dce0e8; /* Crust  - deepest surfaces       */
+    --color-base-content: #4c4f69; /* Text - body copy & headings */
+
+    /* Primary accent — Catppuccin Blue (never Mauve; see style guide §6).
+       Latte blue is dark enough for white foreground (5.17:1 AA). */
+    --color-primary: #1e66f5;
+    --color-primary-content: #ffffff; /* White on Latte Blue: 4.91:1 AA. The
+       literal palette foregrounds fail here (Base → 4.34:1, Crust → 3.71:1),
+       so white wins for legibility per the Catppuccin style guide. */
+
+    /* Secondary = Surface 2 (neutral UI layering). Text gives 3.69:1 (<4.5),
+       so the content foreground is Subtext 1 (5.08:1 AA). */
+    --color-secondary: #acb0be;
+    --color-secondary-content: #5c5f77;
+
+    /* Accent = Peach (official palette); secondary highlight role only,
+       used sparingly — Blue stays the recognizable Civit accent. */
+    --color-accent: #fe640b; /* Peach — sparingly; solid-fill foreground max
+       2.98:1, so use accent fills for non-text indicators only. */
+    --color-accent-content: #ffffff;
+    --color-neutral: #5c5f77; /* Subtext 1 - neutral controls */
+    --color-neutral-content: #eff1f5; /* Base on Subtext 1: 5.53:1 AA */
+
+    /* Status colors — official palette accents */
+    --color-info: #1e66f5; /* Blue   */
+    --color-info-content: #ffffff;
+    --color-success: #40a02b; /* Green: white foreground 3.34:1 — AA only as
+       large/bold text or non-text indicator; see style guide §9 caveat. */
+    --color-success-content: #ffffff;
+    --color-warning: #df8e1d; /* Yellow: best available pairing is Text at
+       3.05:1 — same large/bold-only caveat; prefer alert-neutral + icon+text. */
+    --color-warning-content: #4c4f69;
+    --color-error: #d20f39; /* Red */
+    --color-error-content: #ffffff; /* 5.43:1 AA */
+
+    /* Shape & borders */
+    --radius-box: 0.5rem;
+    --radius-field: 0.25rem;
+    --radius-selector: 0.25rem;
+    --border: 1px;
+    --size-default: 0.875rem;
+
+    /* --- Civit-specific reference tokens (palette roles not covered above) --- */
+    --civit-surface-0: #ccd0da;
+    --civit-surface-1: #bcc0cc;
+    --civit-surface-2: #acb0be;
+    --civit-overlay-0: #9ca0b0; /* reference role token (subtle borders on dark surfaces) */
+    --civit-subtext-0: #6c6f85;
+    --civit-subtext-1: #5c5f77;
+    --civit-border-subtle: #acb0be; /* Surface 2 separators */
+    --civit-selection: rgba(172, 176, 190, 0.3); /* Overlay 2 @ ~30% */
+    --civit-focus: #1e66f5; /* Blue focus ring */
+  }
+
+  /* Dark theme — Catppuccin Mocha. */
+  [data-theme='catppuccin-mocha'] {
+    color-scheme: dark;
+
+    --color-base-100: #1e1e2e; /* Base */
+    --color-base-200: #181825; /* Mantle */
+    --color-base-300: #11111b; /* Crust */
+    --color-base-content: #cdd6f4; /* Text */
+
+    /* Mocha blue is light; dark Crust foreground keeps 9.16:1 contrast. */
+    --color-primary: #89b4fa;
+    --color-primary-content: #11111b;
+
+    --color-secondary: #45475a; /* Surface 1 */
+    --color-secondary-content: #cdd6f4; /* 8.16:1 */
+
+    --color-accent: #f5c2e7; /* Pink - secondary highlight role only */
+    --color-accent-content: #11111b;
+
+    --color-neutral: #6c7086; /* Overlay 0 */
+    --color-neutral-content: #cdd6f4;
+
+    --color-info: #89b4fa;
+    --color-info-content: #11111b;
+    --color-success: #a6e3a1;
+    --color-success-content: #11111b;
+    --color-warning: #f9e2af;
+    --color-warning-content: #11111b;
+    --color-error: #f38ba8;
+    --color-error-content: #11111b;
+
+    --radius-box: 0.5rem;
+    --radius-field: 0.25rem;
+    --radius-selector: 0.25rem;
+    --border: 1px;
+    --size-default: 0.875rem;
+
+    --civit-surface-0: #313244;
+    --civit-surface-1: #45475a;
+    --civit-surface-2: #585b70;
+    --civit-overlay-0: #6c7086;
+    --civit-subtext-0: #a6adc8;
+    --civit-subtext-1: #bac2de;
+    --civit-border-subtle: #585b70;
+    --civit-selection: rgba(147, 153, 178, 0.3); /* Overlay 2 @ ~30% */
+    --civit-focus: #89b4fa;
   }
 }
 
-[data-theme='light'] {
-  --civit-bg: #f7f8fa;
-  --civit-surface: #ffffff;
-  --civit-text: #1b1f27;
-  --civit-muted: #565e6b;
-  --civit-border: #d7dbe2;
-  --civit-accent: #0b62be;
-}
-
-/* Visible focus everywhere, not colour-only. */
+/* Visible keyboard focus everywhere, accent-coloured, not colour-only. */
 :focus-visible {
   outline: 2px solid var(--civit-focus);
   outline-offset: 2px;
+}
+
+::selection {
+  background: var(--civit-selection);
 }

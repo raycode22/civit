@@ -25,7 +25,7 @@ The stack below is the accepted plan from [`AGENTS.md`](AGENTS.md), [`docs/plann
 | Framework | Astro `^7.4.1`, explicit `output: 'static'` |
 | Interactive UI | Svelte `^5.57.2` islands via `@astrojs/svelte ^9.1.0`, hydrating the active island only |
 | Language | TypeScript strict (`astro/tsconfigs/strict`), `typescript ~5.9.0`, checked by `@astrojs/check ^0.9.11` |
-| Styling | Tailwind CSS `^4.3.3` via the official `@tailwindcss/vite ^4.3.3` plugin + CSS design tokens |
+| Styling | Tailwind CSS `^4.3.3` (`@tailwindcss/vite ^4.3.3`) + **daisyUI `^5.7.50`** (CSS `@plugin` syntax) with custom **Catppuccin Latte/Mocha** themes — see the [Civit Catppuccin style guide](docs/design/catppuccin-style-guide.md) |
 | Package manager | pnpm `10.34.7` (`packageManager` field; committed `pnpm-lock.yaml`) |
 | Development runtime | Node.js `22.22.0` (`.nvmrc`; Astro's engines require ≥ 22.22.0) |
 | Unit tests | Vitest `^3.2.7` (v5 kept out until Astro/Svelte compatibility is verified) |
@@ -86,13 +86,15 @@ Actual contents at the time of writing (Phase 1 / Prompt 1B — shared shell lan
 │   ├── lib/text/wordCount.ts          # tiny pure engine used by the island
 │   ├── lib/theme/theme.ts             # pure theme resolution/persistence + pre-paint script source
 │   └── styles/
-│       ├── global.css                 # Tailwind v4 import + base tokens
-│       └── theme.css                  # documented light/dark CSS-variable tokens
+│       ├── global.css                 # Tailwind v4 import + daisyUI @plugin
+│       └── theme.css                  # catppuccin-latte / catppuccin-mocha daisyUI themes + Civit tokens
 ├── tests/
 │   ├── wordCount.test.ts      # Vitest unit tests
 │   └── theme.test.ts          # theme resolution/persistence unit tests
 └── docs/
     ├── BUILD_STATUS.md        # Honest, evidence-backed phase status tracker
+    ├── design/
+    │   └── catppuccin-style-guide.md  # Permanent visual-system guide (palette, roles, contrast rules)
     ├── decisions/
     │   └── 0001-static-first.md  # ADR: static Astro site on Cloudflare Pages
     └── planning/              # Canonical home of the planning pack

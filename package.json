@@ -23,6 +23,7 @@
     "@astrojs/svelte": "^9.1.0",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.4.1",
+    "daisyui": "^5.7.50",
     "svelte": "^5.57.2",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.9.0"

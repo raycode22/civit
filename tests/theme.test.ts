@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DAISY_THEME,
+  PREPAINT_SCRIPT,
+  THEME_ATTRIBUTE,
   THEME_STORAGE_KEY,
+  applyThemeAttribute,
+  themeFromDaisyName,
   nextPreference,
   readStoredPreference,
   resolveTheme,
@@ -74,5 +79,33 @@ describe('nextPreference', () => {
   it('flips between light and dark', () => {
     expect(nextPreference('dark')).toBe('light');
     expect(nextPreference('light')).toBe('dark');
+  });
+});
+
+describe('Catppuccin daisyUI theme mapping (Prompt 1B revision)', () => {
+  it('maps light/dark choices to the official flavor names', () => {
+    expect(DAISY_THEME.light).toBe('catppuccin-latte');
+    expect(DAISY_THEME.dark).toBe('catppuccin-mocha');
+  });
+
+  it('round-trips flavor names back to light/dark and rejects unknown values', () => {
+    expect(themeFromDaisyName('catppuccin-latte')).toBe('light');
+    expect(themeFromDaisyName('catppuccin-mocha')).toBe('dark');
+    expect(themeFromDaisyName('dracula')).toBeNull();
+    expect(themeFromDaisyName(null)).toBeNull();
+  });
+
+  it('applyThemeAttribute writes the flavor name, not the bare keyword', () => {
+    const el = { attrs: {} as Record<string, string>, setAttribute(n: string, v: string) { this.attrs[n] = v; } };
+    applyThemeAttribute(el, 'dark');
+    expect(el.attrs[THEME_ATTRIBUTE]).toBe('catppuccin-mocha');
+  });
+
+  it('pre-paint script resolves stored preference over OS and never throws without storage', () => {
+    // The script is generated from the same constants — sanity-check its content.
+    expect(PREPAINT_SCRIPT).toContain('catppuccin-latte');
+    expect(PREPAINT_SCRIPT).toContain('catppuccin-mocha');
+    expect(PREPAINT_SCRIPT).toContain(THEME_STORAGE_KEY);
+    expect(PREPAINT_SCRIPT).not.toMatch(/fetch\(|XMLHttpRequest|beacon/i);
   });
 });

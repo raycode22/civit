@@ -10,22 +10,22 @@
   const chars = $derived(sample.length);
 </script>
 
-<div
-  class="rounded-lg border border-[var(--civit-border)] bg-[var(--civit-surface)] p-4"
->
-  <label for="toolkit-sample" class="block text-sm font-medium">
-    Sample text (processed only in this browser tab)
-  </label>
-  <textarea
-    id="toolkit-sample"
-    rows="3"
-    class="mt-2 w-full resize-y rounded border border-[var(--civit-border)] bg-[var(--civit-bg)] p-3 text-[var(--civit-text)]"
-    bind:value={sample}
-  ></textarea>
+<div class="card border border-[var(--civit-border-subtle)] bg-base-200 shadow-sm">
+  <div class="card-body gap-0">
+    <label for="toolkit-sample" class="block text-sm font-medium">
+      Sample text (processed only in this browser tab)
+    </label>
+    <textarea
+      id="toolkit-sample"
+      rows="3"
+      class="textarea mt-2 w-full resize-y"
+      bind:value={sample}
+    ></textarea>
 
-  <!-- aria-live so screen readers announce updated counts; text, not colour-only. -->
-  <p class="mt-3 text-sm text-[var(--civit-muted)]" aria-live="polite">
-    Words: <strong class="text-[var(--civit-text)]">{words}</strong> · Characters:
-    <strong class="text-[var(--civit-text)]">{chars}</strong>
-  </p>
+    <!-- aria-live so screen readers announce updated counts; text, not colour-only. -->
+    <p class="mt-3 text-sm text-base-content/70" aria-live="polite">
+      Words: <strong class="badge badge-primary badge-soft px-2 normal-case">{words}</strong> ·
+      Characters: <strong class="badge badge-neutral badge-soft px-2 normal-case">{chars}</strong>
+    </p>
+  </div>
 </div>
