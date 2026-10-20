@@ -5,7 +5,6 @@ This folder contains the initial product and engineering specification for Civit
 ## Documents
 
 - [`how_to_use_this.md`](how_to_use_this.md) — reading order, stage gates, and definition of done.
-- [`08-qwen-coder-build-guide.md`](08-qwen-coder-build-guide.md) — step-by-step prompts and acceptance checks tailored to Qwen Coder in the browser.
 - [`01-constitution.md`](01-constitution.md) — product principles and non-negotiable architecture constraints.
 - [`02-prd.md`](02-prd.md) — MVP scope, personas, requirements, later roadmap, and acceptance criteria.
 - [`03-technical-implementation-plan.md`](03-technical-implementation-plan.md) — architecture, dependencies, code layout, testing, and stage gates.
@@ -13,6 +12,7 @@ This folder contains the initial product and engineering specification for Civit
 - [`05-offline-pwa-plan.md`](05-offline-pwa-plan.md) — PWA installability, caching, optional engine downloads, quota/eviction and tests.
 - [`06-docker-build-plan.md`](06-docker-build-plan.md) — multi-stage build, static runtime, non-root operation, and offline image variant.
 - [`07-research-and-stack-validation.md`](07-research-and-stack-validation.md) — source-vs-research distinction, current docs, and revisions to the supplied stack proposal.
+- [`08-qwen-coder-build-guide.md`](08-qwen-coder-build-guide.md) — step-by-step prompts and acceptance checks tailored to Qwen Coder in the browser.
 
 ## Recommended sequence
 
