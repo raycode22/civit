@@ -124,7 +124,7 @@ What exists today is only the foundation: a static landing page and one interact
 
 ## 8. Development status and contribution expectations
 
-Per [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md): **Phase 0 (planning pack, agent instructions, ADR, status tracker, repository organization, and this README) is complete or awaiting checkpoint commit; Phases 1–10 have not started.** No tool, route, deployment, PWA, or Docker artifact exists. Do not describe Civit as functional, offline-capable, or production-ready.
+Per [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md): **Phase 0 (planning pack, agent instructions, ADR, status tracker, repository organization, and this README) is complete.** In Phase 1, **Prompt 1A (foundation scaffold) is implemented and locally verified** — `pnpm check`, `pnpm test` (3/3), `pnpm build` (static output), and `pnpm preview` all passed on Node 22.22.0 / pnpm 10.34.7 — and is awaiting review/checkpoint; it is not the whole of Phase 1. **Prompt 1B (CI workflow, lint/format tooling) and Phases 2–10 have not started.** No tools, navigation/registry, deployment, PWA, or Docker artifact exists. Do not describe Civit as functional, offline-capable, or production-ready.
 
 Expectations for contributors and AI coding agents (full detail in [`AGENTS.md`](AGENTS.md)):
 
