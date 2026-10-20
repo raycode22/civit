@@ -32,10 +32,10 @@ function fakeTool(overrides: Partial<ToolMetadata> = {}): ToolMetadata {
 }
 
 describe('registry (current state)', () => {
-  it('contains exactly the implemented slices shipped so far (Prompt 3A: JSON Formatter)', () => {
-    expect(tools.map((t) => t.slug)).toEqual(['json-formatter']);
-    expect(publishedTools.map((t) => t.slug)).toEqual(['json-formatter']);
-    expect(publishedToolCount()).toBe(1);
+  it('contains exactly the implemented slices shipped so far (3A: JSON Formatter; 3B: UUID + Password Generators)', () => {
+    expect(tools.map((t) => t.slug)).toEqual(['json-formatter', 'uuid-generator', 'password-generator']);
+    expect(publishedTools.map((t) => t.slug)).toEqual(['json-formatter', 'uuid-generator', 'password-generator']);
+    expect(publishedToolCount()).toBe(3);
   });
 
   it('every published tool has required metadata and a real component reference', () => {
@@ -58,9 +58,17 @@ describe('registry (current state)', () => {
 
   it('route helpers produce stable trailing-slash paths', () => {
     expect(toolPath('json-formatter')).toBe('/tools/json-formatter/');
-    // Registry-driven: the one implemented slice now yields exactly one route.
-    expect(publishedToolPaths()).toEqual(['/tools/json-formatter/']);
-    expect(toolStaticPaths()).toEqual([{ params: { slug: 'json-formatter' } }]);
+    // Registry-driven: the three implemented slices yield exactly three routes.
+    expect(publishedToolPaths()).toEqual([
+      '/tools/json-formatter/',
+      '/tools/uuid-generator/',
+      '/tools/password-generator/',
+    ]);
+    expect(toolStaticPaths()).toEqual([
+      { params: { slug: 'json-formatter' } },
+      { params: { slug: 'uuid-generator' } },
+      { params: { slug: 'password-generator' } },
+    ]);
   });
 });
 
