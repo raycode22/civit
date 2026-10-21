@@ -32,10 +32,24 @@ function fakeTool(overrides: Partial<ToolMetadata> = {}): ToolMetadata {
 }
 
 describe('registry (current state)', () => {
-  it('contains exactly the implemented slices shipped so far (3A: JSON Formatter; 3B: UUID + Password Generators)', () => {
-    expect(tools.map((t) => t.slug)).toEqual(['json-formatter', 'uuid-generator', 'password-generator']);
-    expect(publishedTools.map((t) => t.slug)).toEqual(['json-formatter', 'uuid-generator', 'password-generator']);
-    expect(publishedToolCount()).toBe(3);
+  it('contains exactly the implemented slices shipped so far (3A: JSON Formatter; 3B: UUID + Password Generators; 3C: Word Counter + Base64 + URL Encoder)', () => {
+    expect(tools.map((t) => t.slug)).toEqual([
+      'json-formatter',
+      'uuid-generator',
+      'password-generator',
+      'word-counter',
+      'base64-tool',
+      'url-encoder',
+    ]);
+    expect(publishedTools.map((t) => t.slug)).toEqual([
+      'json-formatter',
+      'uuid-generator',
+      'password-generator',
+      'word-counter',
+      'base64-tool',
+      'url-encoder',
+    ]);
+    expect(publishedToolCount()).toBe(6);
   });
 
   it('every published tool has required metadata and a real component reference', () => {
@@ -58,16 +72,22 @@ describe('registry (current state)', () => {
 
   it('route helpers produce stable trailing-slash paths', () => {
     expect(toolPath('json-formatter')).toBe('/tools/json-formatter/');
-    // Registry-driven: the three implemented slices yield exactly three routes.
+    // Registry-driven: the six implemented slices yield exactly six routes.
     expect(publishedToolPaths()).toEqual([
       '/tools/json-formatter/',
       '/tools/uuid-generator/',
       '/tools/password-generator/',
+      '/tools/word-counter/',
+      '/tools/base64-tool/',
+      '/tools/url-encoder/',
     ]);
     expect(toolStaticPaths()).toEqual([
       { params: { slug: 'json-formatter' } },
       { params: { slug: 'uuid-generator' } },
       { params: { slug: 'password-generator' } },
+      { params: { slug: 'word-counter' } },
+      { params: { slug: 'base64-tool' } },
+      { params: { slug: 'url-encoder' } },
     ]);
   });
 });
