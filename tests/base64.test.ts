@@ -19,7 +19,10 @@ describe('encodeBase64', () => {
     // and accept non-Latin1 strings (unlike older browser btoa, which throws),
     // so the TextEncoder layer is required for correctness, not just to avoid
     // exceptions. Round-trip below proves byte-correct UTF-8 handling.
-    const rt = decodeBase64(encodeBase64('héllo ✨ 日本語').output);
+    const enc = encodeBase64('héllo ✨ 日本語');
+    expect(enc.ok).toBe(true); // narrows CodecResult to the success variant
+    if (!enc.ok) throw new Error('encoding should succeed'); // unreachable; type guard
+    const rt = decodeBase64(enc.output);
     expect(rt).toEqual({ ok: true, output: 'héllo ✨ 日本語' });
   });
 
